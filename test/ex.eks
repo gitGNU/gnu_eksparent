@@ -1,0 +1,149 @@
+/**
+	@file
+	@author Florian Evaldsson
+	@version 0.1
+	
+	@section LICENSE
+	
+	Copyright (c) 2015 Florian Evaldsson <florian.evaldsson@telia.com>
+
+
+	Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+	The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+	
+	@section DESCRIPTION
+
+	Demo eks file2
+*/
+
+//om { nämns så kommer allting att klassas som text
+//kommentarer slutar på \n
+
+Vanlig text
+
+#aoe{
+	#inner{
+		#detta_behandlar_resten_som_en_vektor
+			##"\"inner_inner
+			aoei\""aoeea
+				värde1
+				värde2
+				värde3
+		värde4 //detta kommer in i listan till slutet.
+		##ett värde med kommentering... //kommentering
+		@# //avsluta listan, fortsätt med texten
+		detta kommer vid sidan om
+		mer test
+	}
+}
+
+#text\{{
+	Detta fungerar som <text>abc<\text> 
+	@br
+	
+	//@ behandlas som enskilt meddelande
+	
+	@en_funktion
+	
+	ännu mer text
+
+	/********
+	flerradskommentering
+	********/
+}
+
+//* oauoeuoeuoeu test för kommentering */
+
+→→→→→→→→→→→→Vanlig text
+
+#barn
+	##barn2
+		###o{
+			aoeaoe
+			
+			#aoe
+				hd/thnn
+		}
+
+#test{
+test
+}
+
+#aoe
+	##oeuoeu{
+		oeuoeu
+		@#
+		Vanlig text
+		#ouoe
+			##oae{
+
+			/*
+				En kommentering
+			*/
+
+			#ae // kommentering efter
+			aoeaoe
+			}
+	}
+@#
+
+#aoe{
+	#inner{
+		#tillbakatest
+			##kokoko{
+				#oeuoei
+					##ännumerkoko{
+						#kaka
+						#kokaärenbaka
+			
+						@#
+			
+						aoueoeu
+			
+						#oeieui
+						#aoeaoe
+					}
+		
+				#aoe
+					##eueuiuei
+						aoeaoe
+						aoe
+		
+			}
+		#aoe
+		##aoe
+		@#
+		#oeui{
+		oeu
+		oeui
+			#1234
+			##12345
+		@#
+		aouoeu
+		}
+	}
+	
+	#tillbakatest2
+		aoe
+}
+
+#testtext{
+AAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAA
+}
+
+vanlig /* kommentering*/ text
+
+aou
+#aou
+oei
+eui
+euid
+#euieui
+#1234
+#eoii
+

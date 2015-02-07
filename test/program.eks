@@ -1,0 +1,243 @@
+/**
+	@file
+	@author Florian Evaldsson
+	@version 0.1
+	
+	@section LICENSE
+	
+	Copyright (c) 2015 Florian Evaldsson <florian.evaldsson@telia.com>
+
+
+	Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+	The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+	
+	@section DESCRIPTION
+
+	Demo eks file
+*/
+
+//Hattis
+#Active-objects
+	##hattis
+		###position
+		76,55
+		###mov
+		all_directions
+		###mov_speed
+		50.000000,50.000000
+		###mov_acceleration
+		50.000000,50.000000
+		###mov_deacceleration
+		50.000000,50.000000
+		###player
+		1
+	##hinder{
+		//en kommentering
+		#position
+		247,362
+		247,330
+		247,394
+		247,298
+		247,266
+		247,234
+		343,394
+		343,362
+		343,330
+		343,298
+		343,266
+		343,234
+		343,202
+		343,170
+		439,170
+		407,170
+		375,170
+		471,170
+		503,170
+		535,170
+		567,170
+		599,138
+		599,170
+		695,170
+		727,170
+		727,202
+		727,234
+		727,266
+		727,298
+		727,362
+		695,394
+		599,394
+		663,394
+		567,394
+		535,394
+		503,394
+		439,362
+		439,330
+		439,298
+		439,266
+		503,266
+		535,266
+		567,266
+		599,266
+		631,266
+		631,298
+		407,490
+		439,490
+		471,490
+		503,490
+		535,490
+		567,490
+		599,490
+		791,490
+		823,490
+		823,458
+		823,426
+		823,330
+		823,298
+		823,266
+		823,170
+		823,106
+		695,74
+		663,74
+		631,74
+		599,74
+		567,74
+		535,74
+		503,74
+		471,74
+		439,74
+		343,74
+		311,74
+		279,74
+		247,74
+		247,106
+		247,426
+		247,458
+		247,490
+		247,522
+		247,554
+		247,586
+		279,586
+		503,586
+		535,586
+		631,586
+		663,586
+		695,586
+		727,586
+		759,586
+		791,586
+		823,586
+		919,458
+		919,426
+		919,394
+		919,362
+		919,330
+		919,298
+		919,266
+		919,234
+		919,202
+		919,170
+		375,74
+		407,74
+		599,106
+		311,586
+		407,586
+		439,586
+		471,586
+		567,586
+		599,586
+		855,586
+		887,586
+		919,586
+		919,554
+		919,522
+		919,490
+		247,138
+		727,74
+		759,74
+		791,74
+		823,74
+		919,138
+		919,106
+		919,74
+		823,138
+		823,202
+		823,234
+		727,490
+		759,490
+		695,490
+		663,490
+		631,490
+		375,490
+		343,490
+		631,170
+		663,170
+		727,330
+		727,394
+		631,394
+		471,394
+		439,394
+		471,266
+		#mov
+		none
+		}
+	##mal
+		###position
+		311,522
+		471,298
+		567,106
+		631,106
+		471,330
+		503,362
+		471,362
+		503,330
+		503,298
+		567,138
+		535,106
+		535,138
+		663,106
+		663,138
+		631,138
+		311,554
+		279,554
+		279,522
+		759,426
+		759,458
+		791,458
+		791,426
+		855,74
+		887,74
+		887,106
+		855,106
+		###mov
+		none
+	##ao1431
+		###position
+		1294,693
+		###mov
+		none
+	##ao14358
+		###position
+		1304,708
+		###mov
+		none
+#triggers
+	##map1
+		###AO_COLLISION(hattis,hinder)
+		AO_STOP(hattis)
+		AO_SETX(hattis,0)
+		###AO_COLLISION(hattis,mal)
+		AO_STOP(hattis)
+		AO_DESTROY(mal)
+		###AO_COUNT(mal)==0
+		AO_DESTROY(hattis)
+		AO_SETX(ao1431,0)
+		AO_SETY(ao1431,0)
+		AO_DESTROY(ao14358)
+		###ANIMATION_ROLLER==2000
+		AO_SETX(ao14358,0)
+		AO_SETY(ao14358,0)
+		AO_DESTROY(hattis)
+		AO_DESTROY(ao1431)

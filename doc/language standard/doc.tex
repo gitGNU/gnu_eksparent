@@ -1,0 +1,351 @@
+% Standard of the eks language
+% Copyright (C) 2015  Florian Evaldsson <florian.evaldsson@telia.com>
+%
+% This program is free software; you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation; either version 2 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License along
+% with this program; if not, write to the Free Software Foundation, Inc.,
+% 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+\documentclass{book}
+
+\usepackage[english]{babel}
+\usepackage{fontspec}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{import}
+\usepackage{setspace}
+\usepackage{url}
+\usepackage{tocloft}
+\usepackage{color}
+\usepackage[hmargin=1in,vmargin=1in]{geometry}
+
+\title{\textbf{EKS Standard reference v 0.1}}
+\author{Florian Evaldsson, florian.evaldsson@telia.com}
+
+%note: im a beginner on writing language standards... Better version to come.
+
+\begin{document}
+	
+	\begin{singlespace}
+	\begin{titlepage}
+
+	\begin{center}
+  
+	%\includegraphics[width=0.15\textwidth,height=0.15\textheight,keepaspectratio]{image.png}
+
+	\textbf{\MakeUppercase{The eks language standard}} \\
+  
+	\textbf{The easy to read markup language}
+
+	\vfill
+
+	{
+		\Large
+		\textsc{\textbf{\textit{The eks language standard v0.1}}}
+		\normalsize
+	}
+
+	\vfill
+
+	Florian Evaldsson \\ florian.evaldsson@telia.com
+
+	\end{center}
+
+	\end{titlepage}
+	\end{singlespace}
+	
+	\begin{singlespace}
+%	{\raggedleft{}Place0} \\
+%	{\raggedleft{}Place1} \\
+%	{\raggedleft{}Place2} \\
+%	{\raggedleft{}Place3} \\
+%	\\
+	{\raggedleft{}\today} \\
+
+	\section*{Foreword}
+
+	This project was made as a try to simplify the parsing and make it look cleaner.
+	i found that xml: were to ''boldy'' <a>some text</a> is taking alot of space. The configuration file markup language is too simple and not very standardized. 
+	The tex markup language is one of my favorites, but it may be a pain to write \\\_ instead of \_. 
+	The yaml markup language is simple and close to my goal, but it still have alot of things that just complicates stuff. Also i wanted a markup language with the simple multi-comment syntax /* something */.
+	Well i just mentioned some things i found as flaws, also my language wont be perfect nor will it fulfill my goals. Someone will probably come up with an even better language, but i think this is in the right way.
+	
+	\vspace{1em}
+	{\raggedleft{}Florian Evaldsson}
+	\end{singlespace}
+	\newpage
+	
+	\section*{Abstract}
+	
+	This is the programming standard for the markup language - eks. 
+	Eks is mainly designed not to be bound to the english language (when used). Its also designed mainly to be easy to read.
+	
+	\emph{Note: This is version 0.1 of the language standard, so dont consider it to be fully functional yet...}
+	
+	\newpage
+	
+	\tableofcontents
+	%\listoffigures
+	\newpage
+	
+	\chapter{Background}
+	
+	My orginal purpose were to create a language which purpose is to be an easy to read, fast to type markup language. With languages such as XML its easy to read for the parser, but not always for the user. 
+	Also XML can take some time to write in. 
+	
+	\section{History}
+	
+	My absolute first version of EKS looked like this:
+	
+	\begin{verbatim}
+		&item1
+		  !item_1_value_list_1
+		    string1
+		    string2
+		    string3
+		  !item_1_value_list_2
+		    string1
+		    string2
+		    string3
+		&item2
+		  !item_2_value_list_1
+		    string1
+		    string2
+		    string3
+		  !item_2_value_list_2
+		    string1
+		    string2
+		    string3
+	\end{verbatim}
+	
+	When parsed it would become a list like this:\\
+	
+	\begin{verbatim}
+		{
+		  item1→{
+		    item_1_value_list_1→{string1,string2,string3},
+		    item_1_value_list_2→{string1,string2,string3}
+		  },
+		  item2→{
+		    item_2_value_list_1→{string1,string2,string3},
+		    item_2_value_list_2→{string1,string2,string3}
+		  }
+		}
+	\end{verbatim}
+	
+	This design had some issues like that it unnecessary with the ! signs, and could be replaced by \&s. Therefor my next design looked like this:
+	
+	\begin{verbatim}
+		&item1
+		  &&item_1_value_list_1
+		    string1
+		    string2
+		    string3
+		  &&item_1_value_list_2
+		    string1
+		    string2
+		    string3
+		&item2
+		  &&item_2_value_list_1
+		    string1
+		    string2
+		    string3
+		  &&item_2_value_list_2
+		    string1
+		    string2
+		    string3
+	\end{verbatim}
+	
+	The result was the same. This was the first real version of this language which i liked, however i changed the \& sign, since i did not really think that it represented or symbolized an element which is the point of it to be.
+	I also took some influences from the ''tex'' language, and implemented more features which i will explain in more detail below.
+	
+	\chapter{Goals}
+	
+	\begin{itemize}
+		\item Eks should not be bound to knowledge in the english language
+		\item Eks should use symbols found on almost every thinkable keyboard layout (ASCII)
+		\item Eks will focus on readability for humans rather than a type-really-fast language
+	\end{itemize}
+	
+	\chapter{The basics}
+	
+	\section{Simple example}
+	
+	Eks is divided like a vector or matrix. With an empty document or a document containing som understandable text will result in a vector like:
+	
+	\begin{verbatim}
+		hello world!
+	\end{verbatim}
+	
+	This will result in a vector like:
+	
+	\begin{verbatim}
+	{hello world!}
+	\end{verbatim}
+	
+	You can then add a subelement like:
+	
+	\begin{verbatim}
+		hello world!
+		
+		#subelement{
+		  this is some text for the subelement.
+		}
+	\end{verbatim}
+	
+	Which results into:
+	
+	\begin{verbatim}
+	{hello world!,subelement→{this is some text for the subelement.}}
+	\end{verbatim}
+	
+	This way is good in situation if you want to write in multiple lines, or just put out some random text.
+	If you then want to list items, its then meant that you should write like this:
+	
+	\begin{verbatim}
+		hello world!
+		
+		#list
+		  first item
+		  second item
+			
+		what happens here?
+		
+	\end{verbatim}
+	
+	this results into:
+	
+	\begin{verbatim}
+	{
+	  hello world!,
+	  list→{first item,second item,what happens here?}
+	}
+	\end{verbatim}
+	
+	To end the list, in case you want ''what happens here?'' in the root element, then just type:
+	
+	\begin{verbatim}
+		hello world!
+		
+		#list
+		  first item
+		  second item
+		
+		@#
+		
+		what happens here?
+		
+	\end{verbatim}
+	
+	This will result into:
+	
+	\begin{verbatim}
+	{
+	  hello world!,list→{first item,second item},
+	  what happens here?
+	}
+	\end{verbatim}
+	
+	Then eks allows huge lists, like:
+	
+	\begin{verbatim}
+		hello world!
+		
+		#list
+		  first item
+		  second item
+		  ##sublist
+		    sublists first item
+		    sublists second item
+		  lists first item
+		  
+		//this will break the list so you go back to the root element
+		@#
+		
+		/*
+		  btw, eks supports multi-line comments.
+		*/
+		what happens here?
+		
+	\end{verbatim}
+	
+	It results into:
+	
+	\begin{verbatim}
+	{
+	  hello world!,
+	  list→{
+	    first item,
+	    second item,
+	    sublist→{sublists first item,sublists second item},
+	    lists first item
+	  },
+	  what happens here?
+	}
+	\end{verbatim}
+	
+	\chapter{Future proposals}
+	
+	Now its possible to do the things i wanted it to do.
+	
+	\begin{verbatim}
+		//it would be nice with settings, or subinfo for a list (inspired by tex)
+		#item[something1,something2=something other]{
+		  blah blah
+		}
+		
+		//declaring functions would be nice
+		@@func1(var1,var2){
+		whatever=whatever
+		}
+		
+		//or just use code... maybe it should work similar to php...
+		@@{
+		whatever=whatever
+		}
+		
+		/*
+		  i dunno how this should work... But it should be there
+		*/
+		
+		//using functions
+		@func(var1,var2)
+		
+		//declaring variables
+		@var1=1234
+		
+		/*
+		  i dunno how this should work... But it should be there
+		*/
+		
+		//including other files... i really dunno if it should look like this but its an idea.
+		@%./filename.eks
+		//or
+		@%./filename.tex
+		//or
+		@%./filename.xml		
+		
+	\end{verbatim}
+	
+	Everything here is just ideas, the first one will probably happen.
+	
+	\begin{thebibliography}{1}
+	
+	%logospråket \emph{http://el.media.mit.edu/logo-foundation/logo/turtle.html}
+	\bibitem{cite:logof}
+		Ref1
+	
+	\end{thebibliography}
+	
+	%\subimport{./../biography/}{biography.tex}
+	
+\end{document}
