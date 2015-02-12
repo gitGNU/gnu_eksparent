@@ -36,7 +36,7 @@ char *eks_parent_get_name(EksParent *tempEksParent)
 		return tempEksParent->name;
 	else
 	{
-		b_error_message("The temp in parent was NULL!");
+		eks_error_message("The temp in parent was NULL!");
 		return NULL;
 	}
 }
@@ -57,7 +57,7 @@ size_t eks_parent_get_child_amount(EksParent *tempEksParent)
 	
 	if(!firstUnit)
 	{
-		b_error_message("No first child?");
+		eks_error_message("No first child?");
 		return 0;
 	}
 	
@@ -88,7 +88,7 @@ void eks_parent_new_first_child(EksParent *topParent)
 		EksParent *thisParent;
 		if((thisParent=malloc(sizeof(EksParent)))==NULL)
 		{
-			b_error_message("Failed to allocate space for the child!");
+			eks_error_message("Failed to allocate space for the child!");
 			return;
 		}
 		thisParent->name=NULL;
@@ -105,7 +105,7 @@ void eks_parent_new_first_child(EksParent *topParent)
 		return;
 	}
 	
-	b_error_message("Could not create the child! %s",topParent->name);
+	eks_error_message("Could not create the child! %s",topParent->name);
 	return;
 }
 
@@ -152,7 +152,7 @@ int eks_parent_set(EksParent *tempEksParent, char *name, EksParentType ptype)
 	}
 	
 	//Something went wrong
-	b_error_message("Could not set parent!");
+	eks_error_message("Could not set parent!");
 	return 0;
 }
 
@@ -168,14 +168,14 @@ void eks_parent_fix_structure(EksParent *parentToFix)
 {
 	if(parentToFix->structure>-1 && parentToFix->upperEksParent!=parentToFix)
 	{
-		b_debug_message("EksParent to fix: %s",parentToFix->name);
+		//b_debug_message("EksParent to fix: %s",parentToFix->name);
 		parentToFix->structure=parentToFix->upperEksParent->structure+1;
 		
 		EksParent *firstUnit=parentToFix->firstChild;
 	
 		if(!firstUnit)
 		{
-			b_error_message("No first child?");
+			eks_error_message("No first child?");
 			return;
 		}
 		
@@ -190,7 +190,7 @@ void eks_parent_fix_structure(EksParent *parentToFix)
 	}
 	else if(parentToFix->structure==0 && parentToFix->upperEksParent==parentToFix)
 	{
-		b_error_message("The parent have its topEksParent as its parent, it might crash after this!");
+		eks_error_message("The parent have its topEksParent as its parent, it might crash after this!");
 	}
 }
 
@@ -216,7 +216,7 @@ int eks_parent_insert(EksParent *thisEksParent,int childNum,EksParent *inEksPare
 	
 		if(!firstUnit)
 		{
-			b_error_message("No first child?");
+			eks_error_message("No first child?");
 			return 0;
 		}
 	
@@ -243,13 +243,13 @@ int eks_parent_insert(EksParent *thisEksParent,int childNum,EksParent *inEksPare
 			loopUnit=loopUnit->nextChild;
 		}while(loopUnit!=firstUnit);
 		
-		b_error_message("Could not insert the parent structure, too high pos!");
+		eks_error_message("Could not insert the parent structure, too high pos!");
 		return 0;
 	}
 	else
 	{
 		//Something went wrong
-		b_error_message("Could not insert the parent structure!");
+		eks_error_message("Could not insert the parent structure!");
 		return 0;
 	}
 }
@@ -325,7 +325,7 @@ EksParent *eks_parent_clone(EksParent *thisEksParent)
 	}
 	else
 	{
-		b_error_message("Could not allocate space for the new child!");
+		eks_error_message("Could not allocate space for the new child!");
 		return NULL;
 	}
 }
@@ -362,7 +362,7 @@ EksParent* eks_parent_get_child(EksParent *tempEksParent,int pos)
 	
 	if(!firstUnit)
 	{
-		b_error_message("No first child?");
+		eks_error_message("No first child?");
 		return NULL;
 	}
 		
@@ -380,7 +380,7 @@ EksParent* eks_parent_get_child(EksParent *tempEksParent,int pos)
 		loopUnit=loopUnit->nextChild;
 	}while(loopUnit!=firstUnit);
 	
-	b_error_message("Your position is probably wrong! Pos[%d] in-EksParent name[%s]",pos,tempEksParent->name);
+	eks_error_message("Your position is probably wrong! Pos[%d] in-EksParent name[%s]",pos,tempEksParent->name);
 	
 	return NULL;
 }
@@ -401,7 +401,7 @@ EksParent* eks_parent_get_first_child(EksParent *tempEksParent)
 		return tempEksParent->firstChild;
 	}
 	
-	b_error_message("Failed to get child!");// There is [%d] children!",tempEksParent->amount);
+	eks_error_message("Failed to get child!");// There is [%d] children!",tempEksParent->amount);
 	return NULL;
 }
 
@@ -421,7 +421,7 @@ EksParent* eks_parent_get_last_child(EksParent *tempEksParent)
 		return tempEksParent->firstChild->prevChild;
 	}
 	
-	b_error_message("Failed to get child!");// There is [%d] children!",tempEksParent->amount);
+	eks_error_message("Failed to get child!");// There is [%d] children!",tempEksParent->amount);
 	return NULL;
 }
 
@@ -444,7 +444,7 @@ EksParent *eks_parent_climb_parent(EksParent *tempEksParent,int amount)
 	
 	if(amount<0)
 	{
-		b_error_message("Cannot back - times! Amount[%d]",amount);
+		eks_error_message("Cannot back - times! Amount[%d]",amount);
 		return NULL;
 	}
 	
@@ -457,7 +457,7 @@ EksParent *eks_parent_climb_parent(EksParent *tempEksParent,int amount)
 		{
 			if(madetwice==1)
 			{
-				b_warning_message("You climbed the parent twice! Amount[%d] Name[%s] Structure[%d]",amount,debugparent->name,debugparent->structure);
+				eks_warning_message("You climbed the parent twice! Amount[%d] Name[%s] Structure[%d]",amount,debugparent->name,debugparent->structure);
 			}
 			
 			madetwice++;
@@ -481,7 +481,7 @@ EksParent* eks_parent_get_child_from_name(EksParent *tempEksParent,const char *t
 {
 	if(!tempEksParent->firstChild)
 	{
-		b_error_message("No first child?");
+		eks_error_message("No first child?");
 		return NULL;
 	}
 	
@@ -500,11 +500,11 @@ EksParent* eks_parent_get_child_from_name(EksParent *tempEksParent,const char *t
 			loopUnit=loopUnit->nextChild;
 		}while(loopUnit!=firstUnit);
 		
-		b_error_message("No such object found [%s]!",tempName);
+		eks_error_message("No such object found [%s]!",tempName);
 	}
 	else
 	{
-		b_error_message("You tried to get the child from a value or comment!");
+		eks_error_message("You tried to get the child from a value or comment!");
 	}
 	return NULL;
 }
@@ -542,7 +542,7 @@ int eks_parent_get_amount_from_type(EksParent *tempEksParent, EksParentType ptyp
 	
 	if(!firstUnit)
 	{
-		b_error_message("No first child?");
+		eks_error_message("No first child?");
 		return -1;
 	}
 		
@@ -577,7 +577,7 @@ EksParent *eks_parent_get_child_from_type(EksParent *tempEksParent,int pos, EksP
 	
 	if(!firstUnit)
 	{
-		b_error_message("No first child?");
+		eks_error_message("No first child?");
 		return NULL;
 	}
 		
@@ -598,7 +598,7 @@ EksParent *eks_parent_get_child_from_type(EksParent *tempEksParent,int pos, EksP
 		loopUnit=loopUnit->nextChild;
 	}while(loopUnit!=firstUnit);
 	
-	b_error_message("Your position is probably wrong! Pos[%d] in-EksParent name[%s] Type[%d]",pos,tempEksParent->name,ptype);
+	eks_error_message("Your position is probably wrong! Pos[%d] in-EksParent name[%s] Type[%d]",pos,tempEksParent->name,ptype);
 	
 	return NULL;
 }
@@ -622,7 +622,7 @@ char *eks_parent_get_information_from_type(EksParent *tempEksParent,int pos, Eks
 	if(tempParent)
 		return tempParent->name;
 		
-	b_error_message("something went wrong!");
+	eks_error_message("something went wrong!");
 	return NULL;
 }
 
@@ -668,7 +668,7 @@ void eks_parent_add_children(EksParent *tempEksParent,int num)
 	}
 	else
 	{
-		b_error_message("invalid number of new children?\n");
+		eks_error_message("invalid number of new children?\n");
 	}
 }
 
@@ -768,7 +768,7 @@ char *eks_parent_dump_text(EksParent *topLevelEksParent)
 			//{
 				if((StructureString=malloc(sizeof(char)*(topLevelEksParent->structure+1)))==NULL)
 				{
-					b_error_message("Failed to allocate space for the returning string!");
+					eks_error_message("Failed to allocate space for the returning string!");
 					return NULL;
 				}
 		
@@ -777,7 +777,7 @@ char *eks_parent_dump_text(EksParent *topLevelEksParent)
 			
 				if((tabString=malloc(sizeof(char)*(topLevelEksParent->structure)))==NULL)
 				{
-					b_error_message("Failed to allocate space for the tabs!");
+					eks_error_message("Failed to allocate space for the tabs!");
 					return NULL;
 				}
 				memset(tabString,'\t',topLevelEksParent->structure-1);

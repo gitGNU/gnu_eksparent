@@ -30,16 +30,16 @@
 #include <glib.h>
 
 /** Display a critical message with nice looking colors */
-#define b_critical_message(msg, ...) printf("\e[0m\e[1m" __FILE__ ":%d: \e[1;37m\e[41mCRITICAL\e[0m\e[1m: (%s)\n\e[32m→\e[0m\e[1m " msg "\e[0m\n\n",__LINE__,__func__, ##__VA_ARGS__)
+#define eks_critical_message(msg, ...) printf("\e[0m\e[1m" __FILE__ ":%d: \e[1;37m\e[41mCRITICAL\e[0m\e[1m: (%s)\n\e[32m→\e[0m\e[1m " msg "\e[0m\n\n",__LINE__,__func__, ##__VA_ARGS__)
 
 /** Display an error message with nice looking colors */
-#define b_error_message(msg, ...) printf("\e[0m\e[1m" __FILE__ ":%d: \e[1;31mERROR\e[0m\e[1m: (%s)\n\e[32m→\e[0m\e[1m " msg "\e[0m\n\n",__LINE__,__func__, ##__VA_ARGS__)
+#define eks_error_message(msg, ...) printf("\e[0m\e[1m" __FILE__ ":%d: \e[1;31mERROR\e[0m\e[1m: (%s)\n\e[32m→\e[0m\e[1m " msg "\e[0m\n\n",__LINE__,__func__, ##__VA_ARGS__)
 
 /** Display a warning message with nice looking colors */
-#define b_warning_message(msg, ...) printf("\e[0m\e[1m" __FILE__ ":%d: \e[1;33mWARNING\e[0m\e[1m: (%s)\n\e[32m→\e[0m\e[1m " msg "\e[0m\n\n",__LINE__,__func__, ##__VA_ARGS__)
+#define eks_warning_message(msg, ...) printf("\e[0m\e[1m" __FILE__ ":%d: \e[1;33mWARNING\e[0m\e[1m: (%s)\n\e[32m→\e[0m\e[1m " msg "\e[0m\n\n",__LINE__,__func__, ##__VA_ARGS__)
 
 /** Display a debug message with nice looking colors */
-#define b_debug_message(msg, ...) printf("\e[0m\e[1m" __FILE__ ":%d: \e[1;36mDEBUG\e[0m\e[1m: (%s)\n\e[32m→\e[0m\e[1m " msg "\e[0m\n\n",__LINE__,__func__, ##__VA_ARGS__)
+#define eks_debug_message(msg, ...) printf("\e[0m\e[1m" __FILE__ ":%d: \e[1;36mDEBUG\e[0m\e[1m: (%s)\n\e[32m→\e[0m\e[1m " msg "\e[0m\n\n",__LINE__,__func__, ##__VA_ARGS__)
 
 /**
 	different types of subobjects
