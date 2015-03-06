@@ -177,7 +177,9 @@ int eks_parent_set(EksParent *tempEksParent, char *name,EksParentType ptype);
 
 void eks_parent_fix_structure(EksParent *parentToFix);
 
-int eks_parent_insert(EksParent *thisEksParent,int childNum,EksParent *inEksParent);
+int eks_parent_from_child_insert_prev(EksParent *child,EksParent *inEksParent);
+
+int eks_parent_insert(EksParent *topParent,EksParent *inEksParent);
 
 EksParent *eks_parent_clone(EksParent *thisEksParent);
 

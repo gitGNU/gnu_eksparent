@@ -239,7 +239,7 @@ static void eks_parse_set_common_and_list(EksParseType *parser)
 				parser->currentParent=parser->currentParent->upperEksParent;
 				
 				//if(parser->currentParent==parser->currentParent->upperEksParent)
-					//b_error_message("GOT TO POS ZERO!");
+					//eks_error_message("GOT TO POS ZERO!");
 			}
 			else if(parser->currentParentLevel<parser->previousParentLevel)
 			{
@@ -432,7 +432,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				
 				if(parser->ladderCurrentAmount<0)
 				{
-					b_error_message("Should '}' be there?");
+					eks_error_message("Should '}' be there?");
 				}
 				
 				//get down to previous level
@@ -655,7 +655,7 @@ EksParent *eks_parent_parse_file(char *filename)
 	else
 	{
 		//om det inte går att öppna filen.
-		b_error_message("Could not open \"%s\"\n",filename);
+		eks_error_message("Could not open \"%s\"\n",filename);
 		fclose(filepointer);
 		eks_parent_exit_parse(parser);
 		return 0;

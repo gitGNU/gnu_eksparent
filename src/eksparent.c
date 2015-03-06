@@ -175,6 +175,7 @@ void eks_parent_fix_structure(EksParent *parentToFix)
 	
 		if(!firstUnit)
 		{
+			//maybe bad error message
 			eks_error_message("No first child?");
 			return;
 		}
@@ -195,7 +196,55 @@ void eks_parent_fix_structure(EksParent *parentToFix)
 }
 
 /**
-	Use this function if you want to insert a topEksParent into another EksParents structure, it will fix so that the EksParents structure is correct.
+	Use this function if you want to insert a topEksParent into another EksParents structure, 
+	This function will insert afterwards
+	it will fix so that the EksParents structure is correct.
+	
+	@param child
+		The child as reference
+	@param inEksParent
+		the parent you want to insert
+	@return
+		returns 1 if it was successful
+*/
+int eks_parent_from_child_insert_prev(EksParent *child,EksParent *inEksParent)
+{
+	if(inEksParent && child->upperEksParent)
+	{
+		inEksParent->upperEksParent=child->upperEksParent;
+		
+		if(inEksParent->prevChild==inEksParent || inEksParent->prevChild==inEksParent)
+		{
+			inEksParent->prevChild=child->prevChild;
+			inEksParent->nextChild=child;
+			child->prevChild->nextChild=inEksParent;
+			child->prevChild=inEksParent;
+		}
+		else
+		{
+			eks_error_message("NOT DONE YET!");
+			
+			///@deprecated
+			inEksParent->prevChild=child->prevChild;
+			inEksParent->nextChild=child;
+			child->prevChild->nextChild=inEksParent;
+			child->prevChild=inEksParent;
+		}
+	
+		eks_parent_fix_structure(inEksParent);
+
+		return 1;
+	}
+		
+	eks_error_message("this did not work!");
+	
+	return 0;
+}
+
+/**
+	Use this function if you want to insert a topEksParent into another EksParents structure, 
+	This function will insert afterwards
+	it will fix so that the EksParents structure is correct.
 	
 	@param thisEksParent
 		The EksParent as reference
@@ -206,52 +255,27 @@ void eks_parent_fix_structure(EksParent *parentToFix)
 	@return
 		returns 1 if it was successful
 */
-int eks_parent_insert(EksParent *thisEksParent,int childNum,EksParent *inEksParent)
+int eks_parent_insert(EksParent *topParent,EksParent *inEksParent)
 {
-	if(thisEksParent!=NULL && childNum>=0)
+	if(topParent)
 	{
-		size_t thispos=childNum;
-		
-		EksParent *firstUnit=thisEksParent->firstChild;
-	
-		if(!firstUnit)
+		if(topParent->firstChild)
+			eks_parent_from_child_insert_prev(topParent->firstChild,inEksParent);
+		else
 		{
-			eks_error_message("No first child?");
-			return 0;
+			topParent->firstChild=inEksParent;
+			
+			inEksParent->upperEksParent=topParent;
+			
+			eks_parent_fix_structure(inEksParent);
 		}
-	
-		EksParent *loopUnit=firstUnit;
-
-		do
-		{
-			if(thispos==0)
-			{
-				//link them together
-				inEksParent->nextChild=loopUnit->nextChild;
-				inEksParent->prevChild=loopUnit->prevChild;
-				inEksParent->upperEksParent=thisEksParent;
-				
-				eks_parent_destroy(loopUnit,1);
-				
-				eks_parent_fix_structure(inEksParent);
-			
-				return 1;
-			}
-			
-			thispos--;
-	
-			loopUnit=loopUnit->nextChild;
-		}while(loopUnit!=firstUnit);
 		
-		eks_error_message("Could not insert the parent structure, too high pos!");
-		return 0;
+		return 1;
 	}
-	else
-	{
-		//Something went wrong
-		eks_error_message("Could not insert the parent structure!");
-		return 0;
-	}
+	
+	eks_error_message("topParent is NULL!");
+	
+	return 0;
 }
 
 /**
@@ -273,13 +297,16 @@ EksParent *eks_parent_clone(EksParent *thisEksParent)
 		newEksParent->name=g_strndup(thisEksParent->name,strlen(thisEksParent->name));
 		newEksParent->structure=thisEksParent->structure;
 		
+		newEksParent->nextChild=newEksParent;
+		newEksParent->prevChild=newEksParent;
+		
 		if(thisEksParent->structure==0 || thisEksParent->upperEksParent==thisEksParent)
 		{
 			newEksParent->upperEksParent=newEksParent;
 		}
 		
 		//do it on the bottom ones as well
-		if(newEksParent->structure>=0)
+		if(thisEksParent->structure>=0)
 		{
 			EksParent *firstUnit=thisEksParent->firstChild;
 	
@@ -290,13 +317,14 @@ EksParent *eks_parent_clone(EksParent *thisEksParent)
 	
 			EksParent *loopUnit=firstUnit;
 			EksParent *newTempUnit;
-			EksParent *prevTempUnit;
+			EksParent *prevTempUnit=NULL;
 
 			do
 			{
 				newTempUnit=eks_parent_clone(loopUnit);
-				newTempUnit->upperEksParent=thisEksParent;
+				newTempUnit->upperEksParent=newEksParent;
 				
+				//if only child
 				if(loopUnit==loopUnit->nextChild)
 				{
 					newTempUnit->nextChild=newTempUnit;
@@ -304,10 +332,15 @@ EksParent *eks_parent_clone(EksParent *thisEksParent)
 					
 					goto end_parent_loop;
 				}
-				else if(loopUnit!=firstUnit)
+				
+				if(prevTempUnit!=NULL)
 				{
 					prevTempUnit->nextChild=newTempUnit;
 					newTempUnit->prevChild=prevTempUnit;
+				}
+				else
+				{
+					newEksParent->firstChild=newTempUnit;
 				}
 				
 				loopUnit=loopUnit->nextChild;
@@ -315,11 +348,11 @@ EksParent *eks_parent_clone(EksParent *thisEksParent)
 				
 			}while(loopUnit!=firstUnit);
 			
-			prevTempUnit->nextChild=thisEksParent->firstChild;
-			thisEksParent->firstChild->prevChild=prevTempUnit;
-			
-			end_parent_loop: ;
+			prevTempUnit->nextChild=newEksParent->firstChild;
+			newEksParent->firstChild->prevChild=prevTempUnit;
 		}
+		
+		end_parent_loop:
 		
 		return newEksParent;
 	}
