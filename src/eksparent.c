@@ -22,6 +22,28 @@
 
 #include "eksparent.h"
 
+EksParent *eks_parent_new(char *name, EksParentType ptype, EksParent *topParent, EksParent *extras)
+{
+	EksParent *thisParent;
+	if((thisParent=malloc(sizeof(EksParent)))==NULL)
+	{
+		eks_error_message("Failed to allocate space for the child!");
+		return NULL;
+	}
+	
+	thisParent->firstExtras=extras;
+	thisParent->firstChild=NULL;
+	
+	thisParent->upperEksParent=topParent;
+	
+	eks_parent_set(thisParent,name,ptype);
+	
+	thisParent->nextChild=thisParent;
+	thisParent->prevChild=thisParent;
+	
+	return thisParent;
+}
+
 /**
 	Get the name/text raw (char*) from a parent object.
 	
@@ -166,9 +188,8 @@ int eks_parent_set(EksParent *tempEksParent, char *name, EksParentType ptype)
 */
 void eks_parent_fix_structure(EksParent *parentToFix)
 {
-	if(parentToFix->structure>-1 && parentToFix->upperEksParent!=parentToFix)
+	if(parentToFix->structure>=0 && parentToFix->upperEksParent!=parentToFix)
 	{
-		//b_debug_message("EksParent to fix: %s",parentToFix->name);
 		parentToFix->structure=parentToFix->upperEksParent->structure+1;
 		
 		EksParent *firstUnit=parentToFix->firstChild;
@@ -324,15 +345,6 @@ EksParent *eks_parent_clone(EksParent *thisEksParent)
 				newTempUnit=eks_parent_clone(loopUnit);
 				newTempUnit->upperEksParent=newEksParent;
 				
-				//if only child
-				if(loopUnit==loopUnit->nextChild)
-				{
-					newTempUnit->nextChild=newTempUnit;
-					newTempUnit->prevChild=newTempUnit;
-					
-					goto end_parent_loop;
-				}
-				
 				if(prevTempUnit!=NULL)
 				{
 					prevTempUnit->nextChild=newTempUnit;
@@ -341,6 +353,15 @@ EksParent *eks_parent_clone(EksParent *thisEksParent)
 				else
 				{
 					newEksParent->firstChild=newTempUnit;
+				}
+				
+				//if only child
+				if(loopUnit==loopUnit->nextChild)
+				{
+					newTempUnit->nextChild=newTempUnit;
+					newTempUnit->prevChild=newTempUnit;
+					
+					goto end_parent_loop;
 				}
 				
 				loopUnit=loopUnit->nextChild;
@@ -671,37 +692,44 @@ char *eks_parent_get_information_from_type(EksParent *tempEksParent,int pos, Eks
 */
 void eks_parent_add_children(EksParent *tempEksParent,int num)
 {
-	if(num>0)
+	if(tempEksParent)
 	{
-		if(!tempEksParent->firstChild)
+		if(num>0)
 		{
-			eks_parent_new_first_child(tempEksParent);
-			num--;
+			if(!tempEksParent->firstChild)
+			{
+				eks_parent_new_first_child(tempEksParent);
+				num--;
+			}
+	
+			EksParent *firstParent=tempEksParent->firstChild;
+	
+			for(int i=0;i<num;i++)
+			{
+				EksParent *newParent=malloc(sizeof(EksParent));
+		
+				newParent->name=NULL;
+				newParent->firstExtras=NULL;
+				newParent->structure=0;
+				newParent->firstChild=NULL;
+		
+				newParent->upperEksParent=tempEksParent;
+		
+				newParent->prevChild=firstParent->prevChild;
+				newParent->nextChild=firstParent;
+				firstParent->prevChild->nextChild=newParent;
+				firstParent->prevChild=newParent;
+			}
+	
 		}
-		
-		EksParent *firstParent=tempEksParent->firstChild;
-		
-		for(int i=0;i<num;i++)
+		else
 		{
-			EksParent *newParent=malloc(sizeof(EksParent));
-			
-			newParent->name=NULL;
-			newParent->firstExtras=NULL;
-			newParent->structure=0;
-			newParent->firstChild=NULL;
-			
-			newParent->upperEksParent=tempEksParent;
-			
-			newParent->prevChild=firstParent->prevChild;
-			newParent->nextChild=firstParent;
-			firstParent->prevChild->nextChild=newParent;
-			firstParent->prevChild=newParent;
+			eks_error_message("invalid number of new children?\n");
 		}
-		
 	}
 	else
 	{
-		eks_error_message("invalid number of new children?\n");
+		eks_error_message("You need to initiate the parent first!");
 	}
 }
 

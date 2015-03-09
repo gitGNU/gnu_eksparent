@@ -94,22 +94,6 @@ typedef enum EksParentDestroyMethod
 }EksParentDestroyMethod;
 
 /**
-	This structure is meant to be used with the extra parameters for a structure.
-	
-	eg \#struct[obj1=something;obj2=something]{}
-	
-	this structure is not the 'final one' so it will probably change.
-*/
-typedef struct EksParentExtras
-{
-	char *name; ///< the name for an element, void if nothing.
-	char *info; ///< the 'readable information' for an element.
-	
-	struct EksParentExtras *nextChild; ///< next child in linked list
-	struct EksParentExtras *prevChild; ///< previous child in linked list
-}EksParentExtras;
-
-/**
 	the most important object/structure in this library.
 	Handles kinda everything
 */
@@ -118,7 +102,7 @@ typedef struct EksParent
 	char *name; ///< The name of the parent.
 	int structure; ///< The significant structure describing what the object 'is', it can be one of these: 1++++ = parent,-1=text,-1=value,-2=comment,0=topmost parent
 	
-	EksParentExtras *firstExtras; ///< in development, not used at the moment
+	struct EksParent *firstExtras; ///< in development, not used at the moment
 	
 	struct EksParent *upperEksParent; ///< The eks-parent above this object, NULL if nothing.
 
@@ -168,6 +152,8 @@ typedef struct EksParseType
 }EksParseType;
 
 /***********FUNCTIONS START HERE!******/
+
+EksParent *eks_parent_new(char *name, EksParentType ptype, EksParent *topParent, EksParent *extras);
 
 char *eks_parent_get_name(EksParent *tempEksParent);
 
