@@ -767,40 +767,51 @@ EksParent *eks_parent_add_child_from_type(EksParent *tempParent,char *name, EksP
 */
 void eks_parent_destroy(EksParent *tempEksParent,EksParentDestroyMethod recursive)
 {
-	//remove the child from the list
-	if(!(recursive&2) && tempEksParent != tempEksParent->upperEksParent && tempEksParent != tempEksParent->nextChild)
+	if(tempEksParent)
 	{
-		tempEksParent->nextChild->prevChild=tempEksParent->prevChild;
-		tempEksParent->prevChild->nextChild=tempEksParent->nextChild;
-	}
-	
-	//remove all children (recursive)
-	if(recursive&1 && tempEksParent->structure>=0)
-	{
-		EksParent *firstUnit=tempEksParent->firstChild;
-	
-		if(!firstUnit)
-			goto free_rest;
-		
-		EksParent *loopUnit=firstUnit;
-		EksParent *sloopUnit;
-
-		do
+		//remove the child from the list
+		if(!(recursive&2) && tempEksParent != tempEksParent->upperEksParent && tempEksParent != tempEksParent->nextChild)
 		{
-			sloopUnit=loopUnit->nextChild;
+			tempEksParent->nextChild->prevChild=tempEksParent->prevChild;
+			tempEksParent->prevChild->nextChild=tempEksParent->nextChild;
+		}
+	
+		//remove all children (recursive)
+		if(recursive&1 && tempEksParent->structure>=0)
+		{
+			EksParent *firstUnit=tempEksParent->firstChild;
+	
+			if(!firstUnit)
+				goto free_rest;
+		
+			EksParent *loopUnit=firstUnit;
+			EksParent *sloopUnit;
+
+			do
+			{
+				sloopUnit=loopUnit->nextChild;
 			
-			eks_parent_destroy(loopUnit,3);
+				eks_parent_destroy(loopUnit,EKS_DESTROY_UPPER | EKS_DESTROY_RECURSIVE);
 			
-			loopUnit=sloopUnit;
-		}while(loopUnit!=firstUnit);
+				loopUnit=sloopUnit;
+			}while(loopUnit!=firstUnit);
+		}
+	
+		free_rest:
+		
+		if(tempEksParent->upperEksParent->firstChild==tempEksParent)
+		{
+			if(tempEksParent->nextChild==tempEksParent || tempEksParent->prevChild==tempEksParent)
+				tempEksParent->upperEksParent->firstChild=NULL;
+			else
+				tempEksParent->upperEksParent->firstChild=tempEksParent->prevChild;
+		}
+	
+		//free the core
+		free(tempEksParent->firstExtras);
+		free(tempEksParent->name);
+		free(tempEksParent);
 	}
-	
-	free_rest:
-	
-	//free the core
-	free(tempEksParent->firstExtras);
-	free(tempEksParent->name);
-	free(tempEksParent);
 }
 
 /**
