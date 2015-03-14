@@ -23,7 +23,7 @@ CFLAGS = -std=c99 -Wall -g
 CFLAGS += -I./../src/ 
 CFLAGS += $(shell pkg-config --cflags glib-2.0)
 
-LDFLAGS = -lm ./../src/libeks.so.0.1
+LDFLAGS = -lm ./../src/libeksparent.so.0.1
 LDFLAGS += $(shell pkg-config --libs glib-2.0)
 
 ###################################
@@ -55,3 +55,6 @@ clean:
 	
 valgrind: all
 	valgrind  --track-origins=yes --tool=memcheck --leak-check=full ./$(NAME)
+	
+lib:
+	make -C ./../src/

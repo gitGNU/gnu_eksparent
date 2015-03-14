@@ -22,10 +22,10 @@
 
 #include "eksparent.h"
 
-EksParent *eks_parent_new(char *name, EksParentType ptype, EksParent *topParent, EksParent *extras)
+EksParent *eks_parent_new(const char *name, EksParentType ptype, EksParent *topParent, EksParent *extras)
 {
-	EksParent *thisParent;
-	if((thisParent=malloc(sizeof(EksParent)))==NULL)
+	EksParent *thisParent=malloc(sizeof(EksParent));
+	if(thisParent==NULL)
 	{
 		eks_error_message("Failed to allocate space for the child!");
 		return NULL;
@@ -34,7 +34,10 @@ EksParent *eks_parent_new(char *name, EksParentType ptype, EksParent *topParent,
 	thisParent->firstExtras=extras;
 	thisParent->firstChild=NULL;
 	
-	thisParent->upperEksParent=topParent;
+	if(topParent)
+		thisParent->upperEksParent=topParent;
+	else
+		thisParent->upperEksParent=thisParent;
 	
 	eks_parent_set(thisParent,name,ptype);
 	
@@ -143,13 +146,18 @@ void eks_parent_new_first_child(EksParent *topParent)
 	@return
 		will return 1 if it succeded
 */
-int eks_parent_set(EksParent *tempEksParent, char *name, EksParentType ptype)
+int eks_parent_set(EksParent *tempEksParent, const char *name, EksParentType ptype)
 {
-	int nameLen=strlen(name);
-	if(name!=NULL && nameLen>0)
+	if(tempEksParent)
 	{
-		tempEksParent->name=g_strndup(name,nameLen);
-		
+		int nameLen=strlen(name);
+		if(name!=NULL && nameLen>0)
+		{
+			tempEksParent->name=g_strndup(name,nameLen);
+		}
+		else
+			tempEksParent->name=NULL;
+	
 		if(ptype==EKS_PARENT_TYPE_TEXT)
 		{
 			tempEksParent->structure=-1;
@@ -160,7 +168,7 @@ int eks_parent_set(EksParent *tempEksParent, char *name, EksParentType ptype)
 			tempEksParent->structure=-2;
 			tempEksParent->firstChild=NULL;
 		}
-		else if(tempEksParent->upperEksParent==NULL && ptype==EKS_PARENT_TYPE_VALUE)
+		else if((tempEksParent->upperEksParent==NULL || tempEksParent->upperEksParent==tempEksParent) && ptype==EKS_PARENT_TYPE_VALUE)
 		{
 			tempEksParent->structure=0;
 			tempEksParent->upperEksParent=tempEksParent;
@@ -765,19 +773,12 @@ EksParent *eks_parent_add_child_from_type(EksParent *tempParent,char *name, EksP
 	@return
 		void
 */
-void eks_parent_destroy(EksParent *tempEksParent,EksParentDestroyMethod recursive)
+static void eks_parent_destroy_below(EksParent *tempEksParent,EksBool recursive)
 {
 	if(tempEksParent)
 	{
-		//remove the child from the list
-		if(!(recursive&2) && tempEksParent != tempEksParent->upperEksParent && tempEksParent != tempEksParent->nextChild)
-		{
-			tempEksParent->nextChild->prevChild=tempEksParent->prevChild;
-			tempEksParent->prevChild->nextChild=tempEksParent->nextChild;
-		}
-	
 		//remove all children (recursive)
-		if(recursive&1 && tempEksParent->structure>=0)
+		if(recursive && tempEksParent->structure>=0)
 		{
 			EksParent *firstUnit=tempEksParent->firstChild;
 	
@@ -791,7 +792,7 @@ void eks_parent_destroy(EksParent *tempEksParent,EksParentDestroyMethod recursiv
 			{
 				sloopUnit=loopUnit->nextChild;
 			
-				eks_parent_destroy(loopUnit,EKS_DESTROY_UPPER | EKS_DESTROY_RECURSIVE);
+				eks_parent_destroy_below(loopUnit,EKS_TRUE);
 			
 				loopUnit=sloopUnit;
 			}while(loopUnit!=firstUnit);
@@ -811,6 +812,21 @@ void eks_parent_destroy(EksParent *tempEksParent,EksParentDestroyMethod recursiv
 		free(tempEksParent->firstExtras);
 		free(tempEksParent->name);
 		free(tempEksParent);
+	}
+}
+
+void eks_parent_destroy(EksParent *tempEksParent,EksBool recursive)
+{
+	if(tempEksParent)
+	{
+		//remove the child from the list
+		if(tempEksParent->nextChild != tempEksParent && tempEksParent->prevChild != tempEksParent)
+		{
+			(tempEksParent->nextChild)->prevChild=tempEksParent->prevChild;
+			(tempEksParent->prevChild)->nextChild=tempEksParent->nextChild;
+		}
+	
+		eks_parent_destroy_below(tempEksParent,recursive);
 	}
 }
 

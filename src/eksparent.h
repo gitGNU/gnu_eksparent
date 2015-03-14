@@ -83,16 +83,6 @@ typedef enum EksParseStateComment
 	EKS_PARENT_STATE_COMMENT_MULTILINE_END_CHECK
 }EksParseStateComment;
 
-/** 
-	Destruction method for the eks_parent_destroy 
-*/
-typedef enum EksParentDestroyMethod
-{
-	EKS_DESTROY_ZERO=0,
-	EKS_DESTROY_RECURSIVE=1,
-	EKS_DESTROY_UPPER=2
-}EksParentDestroyMethod;
-
 /**
 	the most important object/structure in this library.
 	Handles kinda everything
@@ -153,13 +143,13 @@ typedef struct EksParseType
 
 /***********FUNCTIONS START HERE!******/
 
-EksParent *eks_parent_new(char *name, EksParentType ptype, EksParent *topParent, EksParent *extras);
+EksParent *eks_parent_new(const char *name, EksParentType ptype, EksParent *topParent, EksParent *extras);
 
 char *eks_parent_get_name(EksParent *tempEksParent);
 
 size_t eks_parent_get_child_amount(EksParent *tempEksParent);
 
-int eks_parent_set(EksParent *tempEksParent, char *name,EksParentType ptype);
+int eks_parent_set(EksParent *tempEksParent, const char *name,EksParentType ptype);
 
 void eks_parent_fix_structure(EksParent *parentToFix);
 
@@ -214,7 +204,7 @@ void eks_parent_add_children(EksParent *tempEksParent,int num);
 
 EksParent *eks_parent_add_child_from_type(EksParent *tempParent,char *name, EksParentType ptype);
 
-void eks_parent_destroy(EksParent *tempEksParent,EksParentDestroyMethod recursive);
+void eks_parent_destroy(EksParent *tempEksParent,EksBool recursive);
 
 char *eks_parent_dump_text(EksParent *topLevelEksParent);
 

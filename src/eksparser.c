@@ -33,14 +33,9 @@
 */
 EksParseType *eks_parent_init_parse(const char *name)
 {
-	EksParent *par=calloc(1,sizeof(EksParent));
+	EksParent *par=eks_parent_new(name,EKS_PARENT_TYPE_VALUE,NULL,NULL);
 	
 	EksParseType *parser=calloc(1,sizeof(EksParseType));
-	
-	if(name)
-		par->name=g_strndup(name,strlen(name));
-	
-	par->upperEksParent=par;
 	
 	//set all defaults
 	parser->parent=par;
