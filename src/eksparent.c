@@ -125,6 +125,7 @@ void eks_parent_new_first_child(EksParent *topParent)
 		thisParent->nextChild=thisParent;
 		thisParent->prevChild=thisParent;
 		
+		//dont mix up with this one!
 		topParent->firstChild=thisParent;
 		
 		return;
@@ -242,7 +243,7 @@ int eks_parent_from_child_insert_prev(EksParent *child,EksParent *inEksParent)
 	{
 		inEksParent->upperEksParent=child->upperEksParent;
 		
-		if(inEksParent->prevChild==inEksParent || inEksParent->prevChild==inEksParent)
+		if(inEksParent->nextChild==inEksParent || inEksParent->prevChild==inEksParent)
 		{
 			inEksParent->prevChild=child->prevChild;
 			inEksParent->nextChild=child;
@@ -761,6 +762,30 @@ EksParent *eks_parent_add_child_from_type(EksParent *tempParent,char *name, EksP
 	return newParent;
 }
 
+static void eks_parent_destroy_below(EksParent *tempEksParent,EksBool recursive)
+{
+	EksParent *firstUnit=tempEksParent->firstChild;
+	//remove all children (recursive)
+	if(recursive && tempEksParent->structure>=0 && firstUnit)
+	{
+		EksParent *loopUnit=firstUnit;
+		EksParent *sloopUnit;
+
+		do
+		{
+			sloopUnit=loopUnit->nextChild;
+		
+			eks_parent_destroy_below(loopUnit,EKS_TRUE);
+		
+			loopUnit=sloopUnit;
+		}while(loopUnit!=firstUnit);
+	}
+
+	//free the core
+	eks_parent_destroy(tempEksParent->firstExtras,EKS_TRUE);
+	free(tempEksParent->name);
+	free(tempEksParent);
+}
 /**
 	This is the main free function for the parent structure.
 	
@@ -773,60 +798,24 @@ EksParent *eks_parent_add_child_from_type(EksParent *tempParent,char *name, EksP
 	@return
 		void
 */
-static void eks_parent_destroy_below(EksParent *tempEksParent,EksBool recursive)
-{
-	if(tempEksParent)
-	{
-		//remove all children (recursive)
-		if(recursive && tempEksParent->structure>=0)
-		{
-			EksParent *firstUnit=tempEksParent->firstChild;
-	
-			if(!firstUnit)
-				goto free_rest;
-		
-			EksParent *loopUnit=firstUnit;
-			EksParent *sloopUnit;
-
-			do
-			{
-				sloopUnit=loopUnit->nextChild;
-			
-				eks_parent_destroy_below(loopUnit,EKS_TRUE);
-			
-				loopUnit=sloopUnit;
-			}while(loopUnit!=firstUnit);
-		}
-	
-		free_rest:
-		
-		if(tempEksParent->upperEksParent->firstChild==tempEksParent)
-		{
-			if(tempEksParent->nextChild==tempEksParent || tempEksParent->prevChild==tempEksParent)
-				tempEksParent->upperEksParent->firstChild=NULL;
-			else
-				tempEksParent->upperEksParent->firstChild=tempEksParent->prevChild;
-		}
-	
-		//free the core
-		free(tempEksParent->firstExtras);
-		free(tempEksParent->name);
-		free(tempEksParent);
-	}
-}
-
 void eks_parent_destroy(EksParent *tempEksParent,EksBool recursive)
 {
 	if(tempEksParent)
 	{
-		//remove the child from the list
-		if(tempEksParent->nextChild != tempEksParent && tempEksParent->prevChild != tempEksParent)
+		printf("CHANGED FROM: %lx\n",tempEksParent->nextChild->prevChild);
+		tempEksParent->nextChild->prevChild=tempEksParent->prevChild;
+		printf("CHANGED TO: %lx\n",tempEksParent->nextChild->prevChild);
+		tempEksParent->prevChild->nextChild=tempEksParent->nextChild;
+		
+		if(tempEksParent->upperEksParent->firstChild==tempEksParent)
 		{
-			(tempEksParent->nextChild)->prevChild=tempEksParent->prevChild;
-			(tempEksParent->prevChild)->nextChild=tempEksParent->nextChild;
+			if(tempEksParent->nextChild!=tempEksParent && tempEksParent->prevChild!=tempEksParent)
+				tempEksParent->upperEksParent->firstChild=tempEksParent->nextChild;
+			else
+				tempEksParent->upperEksParent->firstChild=NULL;
 		}
-	
-		eks_parent_destroy_below(tempEksParent,recursive);
+		
+		eks_parent_destroy_below(tempEksParent, recursive);
 	}
 }
 
