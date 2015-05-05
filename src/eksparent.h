@@ -112,7 +112,8 @@ typedef struct EksParseType
 	EksParseStates state; ///< Current state of the statemashine
 	EksParseStateComment stateComment; ///< If it is a comment, we are currently looking into 
 	uint8_t stateVector; ///< Saves if it is in vector mode or not, eg \#obj ← vector mode, or \#obj{\#obj{}} ← not vector mode
-
+	uint8_t stateColon; ///< Saves if its in colon mode eg, #vect:aoe\n etc
+	
 	//the return parent
 	EksParent *parent; ///< The parent structure we will return
 	EksParent *currentParent; ///< The current parent in the parsing. It will jump up and down, so its the most frequently used in the parsing process
