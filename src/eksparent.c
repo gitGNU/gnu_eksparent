@@ -555,7 +555,6 @@ EksParent* eks_parent_get_child_from_name(EksParent *tempEksParent,const char *t
 	
 		do
 		{
-			//printf("^%s %s\n",((EksParent*)(tempEksParent->children[i]))->name,tempName);
 			if(strcmp(loopUnit->name,tempName)==0)
 			{
 				return loopUnit;
@@ -762,11 +761,17 @@ EksParent *eks_parent_add_child_from_type(EksParent *tempParent,char *name, EksP
 	return newParent;
 }
 
-static void eks_parent_destroy_below(EksParent *tempEksParent,EksBool recursive)
+/**
+	Internal function that correctly destroys everything below the current parent
+	
+	@param tempEksParent
+		the temp parent to destroy
+*/
+static void eks_parent_destroy_below(EksParent *tempEksParent)
 {
 	EksParent *firstUnit=tempEksParent->firstChild;
-	//remove all children (recursive)
-	if(recursive && tempEksParent->structure>=0 && firstUnit)
+	
+	if(tempEksParent->structure>=0 && firstUnit)
 	{
 		EksParent *loopUnit=firstUnit;
 		EksParent *sloopUnit;
@@ -775,7 +780,7 @@ static void eks_parent_destroy_below(EksParent *tempEksParent,EksBool recursive)
 		{
 			sloopUnit=loopUnit->nextChild;
 		
-			eks_parent_destroy_below(loopUnit,EKS_TRUE);
+			eks_parent_destroy_below(loopUnit);
 		
 			loopUnit=sloopUnit;
 		}while(loopUnit!=firstUnit);
@@ -786,6 +791,7 @@ static void eks_parent_destroy_below(EksParent *tempEksParent,EksBool recursive)
 	free(tempEksParent->name);
 	free(tempEksParent);
 }
+
 /**
 	This is the main free function for the parent structure.
 	
@@ -793,8 +799,6 @@ static void eks_parent_destroy_below(EksParent *tempEksParent,EksBool recursive)
 		The EksParent structure to free
 	@param recursive .
 		If you want to free all the children to the EksParent structure.
-		1 bit= will do recursive search
-		2 bit= On= Will remove all children next to this one,Off=will only destroy THIS child parent and not the ones next to it
 	@return
 		void
 */
@@ -802,9 +806,8 @@ void eks_parent_destroy(EksParent *tempEksParent,EksBool recursive)
 {
 	if(tempEksParent)
 	{
-		printf("CHANGED FROM: %lx\n",tempEksParent->nextChild->prevChild);
+		//link the next child and prev child correctly
 		tempEksParent->nextChild->prevChild=tempEksParent->prevChild;
-		printf("CHANGED TO: %lx\n",tempEksParent->nextChild->prevChild);
 		tempEksParent->prevChild->nextChild=tempEksParent->nextChild;
 		
 		if(tempEksParent->upperEksParent->firstChild==tempEksParent)
@@ -815,7 +818,9 @@ void eks_parent_destroy(EksParent *tempEksParent,EksBool recursive)
 				tempEksParent->upperEksParent->firstChild=NULL;
 		}
 		
-		eks_parent_destroy_below(tempEksParent, recursive);
+		//if you want to destroy everything below
+		if(recursive)
+			eks_parent_destroy_below(tempEksParent);
 	}
 }
 

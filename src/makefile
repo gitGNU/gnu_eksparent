@@ -45,6 +45,14 @@ OBJS=$(SRCS:.c=.o)
 LIBNAME=lib$(NAME).so.$(VERSION)
 
 ###################################
+#	INSTALL SETTINGS
+###################################
+
+ifeq ($(INSTALL_DIR),)
+INSTALL_DIR = /usr
+endif
+
+###################################
 #	ALL BUILD OPTIONS
 ###################################
 
@@ -61,17 +69,26 @@ clean:
 	rm -f ./*.so*
 
 install: all
-	cp $(NAME).h /usr/include/$(NAME).h
-	cp $(LIBNAME) /usr/lib/$(LIBNAME)
-	
-ifeq ("$(wildcard /usr/lib/$(LIBNAME:.so.$(VERSION)=.so))","")
-	ln -s /usr/lib/$(LIBNAME) /usr/lib/$(LIBNAME:.so.$(VERSION)=.so)
+ifeq ($(wildcard $(INSTALL_DIR)/include/*),)
+	mkdir -p $(INSTALL_DIR)/include
+	mkdir -p $(INSTALL_DIR)/lib
+endif
+	cp $(NAME).h $(INSTALL_DIR)/include/$(NAME).h
+	cp $(LIBNAME) $(INSTALL_DIR)/lib/$(LIBNAME)
+ifeq ($(wildcard $(INSTALL_DIR)/lib/$(LIBNAME:.so.$(VERSION)=.so)),)
+	ln -s $(INSTALL_DIR)/lib/$(LIBNAME) $(INSTALL_DIR)/lib/$(LIBNAME:.so.$(VERSION)=.so)
 endif
 	
 uninstall: clean
-	rm /usr/include/$(NAME).h
-	rm /usr/lib/$(LIBNAME)
-	rm /usr/lib/$(LIBNAME:.so.$(VERSION)=.so)
-	
+	rm $(INSTALL_DIR)/include/$(NAME).h
+	rm $(INSTALL_DIR)/lib/$(LIBNAME)
+	rm $(INSTALL_DIR)/lib/$(LIBNAME:.so.$(VERSION)=.so)
+
 doc:
 	doxygen ./../doc/doxygen_conf
+	
+help:
+	@echo "The makefile for the eksparent library"
+	@echo "params are:"
+	@echo "INSTALL_DIR		Set the install parameter, default = /usr"
+
