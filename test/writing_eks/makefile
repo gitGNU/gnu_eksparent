@@ -9,29 +9,22 @@
 ###################################
 
 ###################################
-#	COMMON CONFIGURATION
-###################################
-
-NAME = eksparent
-VERSION = 0.1
-
-###################################
-#	GENERAL STUFF
+#	Makefile for the test
 ###################################
 
 CC = gcc
+NAME = test
+DEBUG = ddd
 
 ###################################
-#	C-FLAGS
-#	LD FLAGS
+#	Libs and such
 ###################################
 
-CFLAGS = -c -fPIC -std=c99 
-CFLAGS += -g -Wall
-CFLAGS += -DCC_COMPILING_EKS
+CFLAGS = -std=c99 -Wall -g
+CFLAGS += -I./../../src/ 
 CFLAGS += $(shell pkg-config --cflags glib-2.0)
 
-LDFLAGS = -lm
+LDFLAGS = -lm ./../../src/libeksparent.so.0.1
 LDFLAGS += $(shell pkg-config --libs glib-2.0)
 
 ###################################
@@ -42,56 +35,30 @@ SRCS=$(wildcard *.c)
 
 OBJS=$(SRCS:.c=.o)
 
-LIBNAME=lib$(NAME).so.$(VERSION)
-
 ###################################
-#	INSTALL SETTINGS
-###################################
-
-INSTALL_DIR ?= /usr
-
-###################################
-#	ALL BUILD OPTIONS
+#	Common compile options
 ###################################
 
 all: $(NAME)
 
 $(NAME): $(OBJS) 
-	$(CC) -shared -o $(LIBNAME) $(LDFLAGS) $^
+	$(CC) -o $(NAME) $(LDFLAGS) $^
 	
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 	
+run: all
+	./$(NAME)
+
 clean:
 	rm -f ./*.o
-	rm -f ./*.so*
-
-install: all
-ifeq ($(wildcard $(INSTALL_DIR)/include/*),)
-	mkdir -p $(INSTALL_DIR)/include
-	mkdir -p $(INSTALL_DIR)/lib
-endif
-	cp $(NAME).h $(INSTALL_DIR)/include/$(NAME).h
-	cp $(LIBNAME) $(INSTALL_DIR)/lib/$(LIBNAME)
-ifeq ($(wildcard $(INSTALL_DIR)/lib/$(LIBNAME:.so.$(VERSION)=.so)),)
-	ln -s $(INSTALL_DIR)/lib/$(LIBNAME) $(INSTALL_DIR)/lib/$(LIBNAME:.so.$(VERSION)=.so)
-endif
+	rm $(NAME)
 	
-uninstall: clean
-	rm $(INSTALL_DIR)/include/$(NAME).h
-	rm $(INSTALL_DIR)/lib/$(LIBNAME)
-	rm $(INSTALL_DIR)/lib/$(LIBNAME:.so.$(VERSION)=.so)
-
-doc:
-	doxygen ./../doc/doxygen_conf
-
-#some color/text codes for the help parameter
-BOLD:=\x1b[1m
-NORMAL:=\x1b[0m
-BLUE:=\x1b[34;01m
-
-help:
-	@echo -e "$(BOLD)The makefile for the eksparent library"
-	@echo -e "$(NORMAL)params are:"
-	@echo -e "$(BLUE)INSTALL_DIR$(NORMAL)		Set the install parameter, default = /usr"
+valgrind: all
+	valgrind  --track-origins=yes --tool=memcheck --leak-check=full ./$(NAME)
 	
+debug: all
+	$(DEBUG) ./$(NAME) -x ./../debug_profile
+	
+lib:
+	make -C ./../src/

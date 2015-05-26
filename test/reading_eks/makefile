@@ -21,10 +21,10 @@ DEBUG = ddd
 ###################################
 
 CFLAGS = -std=c99 -Wall -g
-CFLAGS += -I./../src/ 
+CFLAGS += -I./../../src/ 
 CFLAGS += $(shell pkg-config --cflags glib-2.0)
 
-LDFLAGS = -lm ./../src/libeksparent.so.0.1
+LDFLAGS = -lm ./../../src/libeksparent.so.0.1
 LDFLAGS += $(shell pkg-config --libs glib-2.0)
 
 ###################################
@@ -58,7 +58,7 @@ valgrind: all
 	valgrind  --track-origins=yes --tool=memcheck --leak-check=full ./$(NAME)
 	
 debug: all
-	$(DEBUG) ./$(NAME) -x debug_profile
+	$(DEBUG) ./$(NAME) -x ./../debug_profile
 	
 lib:
 	make -C ./../src/

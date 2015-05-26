@@ -58,12 +58,51 @@ EksParent *eks_parent_new(const char *name, EksParentType ptype, EksParent *topP
 char *eks_parent_get_name(EksParent *tempEksParent)
 {
 	if(tempEksParent)
-		return tempEksParent->name;
+		return g_strdup(tempEksParent->name);
 	else
 	{
 		eks_error_message("The temp in parent was NULL!");
 		return NULL;
 	}
+}
+
+/**
+	Do something foreach child
+	
+	@param theParent
+		The parent to do the foreach on
+	@param func
+		The function to run
+	@param inparam
+		The input parameter
+*/
+void eks_parent_foreach_child(EksParent *theParent,void *func,void *inparam)
+{
+	void (*typefunction)(EksParent*,void*);
+	
+	typefunction=func;
+
+	EksParent *firstUnit=theParent->firstChild;
+	
+	if(!firstUnit)
+	{
+		eks_error_message("No first child?");
+		return;
+	}
+	
+	EksParent *loopUnit=firstUnit;
+	EksParent *sloopUnit;
+
+	do
+	{
+		sloopUnit=loopUnit->nextChild;
+		
+		typefunction(loopUnit,inparam);
+		
+		loopUnit=sloopUnit;
+	}while(loopUnit!=firstUnit);
+	
+	return;
 }
 
 /**
@@ -403,7 +442,7 @@ EksParent *eks_parent_clone(EksParent *thisEksParent)
 	@return
 		will return 1 if it exists
 */
-uint8_t eks_parent_check_child(EksParent *tempEksParent,int pos)
+int eks_parent_check_child(EksParent *tempEksParent,int pos)
 {
 	return (tempEksParent->firstChild && (tempEksParent->structure>0 || (tempEksParent->structure==0 && tempEksParent->upperEksParent==tempEksParent)));
 }
@@ -581,7 +620,7 @@ EksParent* eks_parent_get_child_from_name(EksParent *tempEksParent,const char *t
 	@return
 		1 if they are the same 0 if they arent.
 */
-uint8_t eks_parent_compare_type(EksParent *tempEksParent, EksParentType ptype)
+int eks_parent_compare_type(EksParent *tempEksParent, EksParentType ptype)
 {
 	return ((ptype==EKS_PARENT_TYPE_VALUE && tempEksParent->structure>=0) || tempEksParent->structure==-ptype);
 }

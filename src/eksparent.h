@@ -160,7 +160,7 @@ int eks_parent_insert(EksParent *topParent,EksParent *inEksParent);
 
 EksParent *eks_parent_clone(EksParent *thisEksParent);
 
-uint8_t eks_parent_check_child(EksParent *tempEksParent,int pos);
+int eks_parent_check_child(EksParent *tempEksParent,int pos);
 
 EksParent* eks_parent_get_child(EksParent *tempEksParent,int pos);
 
@@ -175,7 +175,7 @@ EksParent* eks_parent_get_child_from_name(EksParent *tempEksParent,const char *t
 /** if you only want to check if a child exists*/
 #define eks_parent_check_child_from_name(par,name) eks_parent_get_child_from_name(par,name)
 
-uint8_t eks_parent_compare_type(EksParent *tempEksParent, EksParentType ptype);
+int eks_parent_compare_type(EksParent *tempEksParent, EksParentType ptype);
 
 int eks_parent_get_amount_from_type(EksParent *tempEksParent, EksParentType ptype);
 
