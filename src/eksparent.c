@@ -190,7 +190,7 @@ int eks_parent_set(EksParent *tempEksParent, const char *name, EksParentType pty
 {
 	if(tempEksParent)
 	{
-		int nameLen=strlen(name);
+		int nameLen=name?strlen(name):0;
 		if(name!=NULL && nameLen>0)
 		{
 			tempEksParent->name=g_strndup(name,nameLen);
@@ -905,7 +905,10 @@ char *eks_parent_dump_text(EksParent *topLevelEksParent)
 				tabString[topLevelEksParent->structure-1]='\0';
 			
 				void *temp=returnString;
-				returnString=g_strconcat(returnString,tabString,StructureString,topLevelEksParent->name,"\n",NULL);
+				if(topLevelEksParent->name)
+					returnString=g_strconcat(returnString,tabString,StructureString,topLevelEksParent->name,"\n",NULL);
+				else
+					returnString=g_strconcat(returnString,tabString,StructureString,"\n",NULL);
 				free(temp);
 			//else
 			//{

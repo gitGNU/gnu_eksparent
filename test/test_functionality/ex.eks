@@ -149,3 +149,13 @@ euid
 #var1:aoue #var2{#var:aou2#varin1:#varin2{#varin3{23423}}} #var3{aoeuoeu}
 }
 #var:aoe#var:abc#var:123
+#{a,b,#vect{a,b,c}}
+#
+	1
+	2
+	3
+	##
+		3
+		4
+		5
+

@@ -221,31 +221,28 @@ static void eks_parse_set_current_parent_child(EksParseType *parser, char *text,
 */
 static void eks_parse_set_common_and_list(EksParseType *parser)
 {
-	if(parser->currentWordSize>0)
+	char *str=eks_parse_get_text(parser);
+
+	printf("AND LIST<%d>[%s]\n",(int)parser->currentParentLevel,str);
+	
+	//set parsing level
+	if(parser->currentParentLevel==parser->previousParentLevel)
 	{
-		char *str=eks_parse_get_text(parser);
-		if(str)
-		{
-			printf("AND LIST<%d>[%s]\n",(int)parser->currentParentLevel,str);
-			
-			//set parsing level
-			if(parser->currentParentLevel==parser->previousParentLevel)
-			{
-				parser->currentParent=parser->currentParent->upperEksParent;
-			}
-			else if(parser->currentParentLevel<parser->previousParentLevel)
-			{
-				parser->currentParent=eks_parent_climb_parent(parser->currentParent,parser->previousParentLevel-parser->currentParentLevel+1);
-			}
-			
-			eks_parent_add_children(parser->currentParent,1);
-			parser->currentParent=eks_parent_get_last_child(parser->currentParent);
-			eks_parent_set(parser->currentParent,str,EKS_PARENT_TYPE_VALUE);
-			
-			free(str);
-		}
-		parser->currentWordSize=0;
+		parser->currentParent=parser->currentParent->upperEksParent;
 	}
+	else if(parser->currentParentLevel<parser->previousParentLevel)
+	{
+		parser->currentParent=eks_parent_climb_parent(parser->currentParent,parser->previousParentLevel-parser->currentParentLevel+1);
+	}
+	
+	eks_parent_add_children(parser->currentParent,1);
+	parser->currentParent=eks_parent_get_last_child(parser->currentParent);
+	eks_parent_set(parser->currentParent,str,EKS_PARENT_TYPE_VALUE);
+	
+	if(str)
+	free(str);
+			
+	parser->currentWordSize=0;
 }
 
 /**
@@ -421,7 +418,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				if(!tempColon)
 					eks_parse_set_common_nothing(parser);
 			}
-			else if(c=='\n' && parser->stateVector==1 && parser->stateIsString==0)
+			else if(((c=='\n' && parser->stateVector==1) || c==',') && parser->stateIsString==0)
 			{
 				//for and lists
 				eks_parse_set_common_nothing(parser);
