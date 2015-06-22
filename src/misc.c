@@ -16,37 +16,66 @@
 	
 	@section DESCRIPTION
 
-	Demo-file that demonstrates the functionality of eks.
+	The c-file for other useful functions
 */
 
-/* Info about animals! */
+#include <stdint.h>
+#include <stdlib.h>
+#include "misc.h"
 
-#animals{
-	#dog
-		//a dog type you would love <3
-		##spaniel{
-			#sound:wofff
-			#cuteness:very high
-			#info{
-				this is an awsomely cute dog, which you would love to adore
-			}
-		}
-		//another dog type
-		##mastiff
-		##gah, this dog is just too cute to mention
-	#cats
-		##farmers cat{
-			#sound:meow#cuteness:high
-			
-			#info{
-				Everyone loves this cat!
-			}
-		
-		/*
-		##a cat we dont know[#param1:this #param2:another value]
-			im the spooky cat.
-		*/
-		}
-	#rabbits
-		//something here maybe
+/**
+	Fast (int)log(num)/log(10)
+	
+	@num .
+		the value to calculate
+	@return
+		the successful value
+*/
+static int log10s(intptr_t num)
+{
+	int res=0;
+	while(num>=10)
+	{
+		num=(num/10);
+		res++;
+	}
+	return res;
+}
+
+/**
+	Converts int to string
+	
+	@num .
+		The value to convert
+	@return NEW
+		returns pointer to the new string
+*/
+char *eks_int_to_string(intptr_t num)
+{
+	int isNegative=0;
+	if(num<0)
+	{
+		isNegative=1;
+		//make it positive
+		num=-num;
+	}
+	
+	int length=log10s(num);
+	
+	char* retString=malloc(sizeof(char)*(length+2+isNegative));
+	
+	retString[length+1+isNegative]='\0';
+	
+	if(isNegative)
+	{
+		retString[0]='-';
+	}
+	
+	while(0<=length)
+	{
+		retString[length+isNegative]='0'+num%10;
+		num=(intptr_t)(num/10);
+		length--;
+	}
+	return retString;
 }

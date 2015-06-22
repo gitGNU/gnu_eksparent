@@ -80,8 +80,19 @@ typedef enum EksParseStateComment
 	EKS_PARENT_STATE_COMMENT,
 	EKS_PARENT_STATE_COMMENT_SINGLE_LINE,
 	EKS_PARENT_STATE_COMMENT_MULTILINE,
-	EKS_PARENT_STATE_COMMENT_MULTILINE_END_CHECK
+	EKS_PARENT_STATE_COMMENT_MULTILINE_END_CHECK,
+	EKS_PARENT_STATE_COMMENT_MULTILINE_NESTLE_CHECK
 }EksParseStateComment;
+
+/**
+	Type, this can be or:ed
+*/
+typedef enum EksParentValue
+{
+	EKS_PARENT_VALUE_STRING,
+	EKS_PARENT_VALUE_INT,
+	EKS_PARENT_VALUE_DOUBLE
+}EksParentValue;
 
 /**
 	the most important object/structure in this library.
@@ -89,8 +100,14 @@ typedef enum EksParseStateComment
 */
 typedef struct EksParent
 {
-	char *name; ///< The name of the parent.
-	int structure; ///< The significant structure describing what the object 'is', it can be one of these: 1++++ = parent,-1=text,-1=value,-2=comment,0=topmost parent
+	union
+	{
+		char *name; ///< The name of the parent.
+		intptr_t iname; ///< The int version
+		double dname; ///the double version
+	};
+	uint8_t type; ///< the type used above
+	short structure; ///< The significant structure describing what the object 'is', it can be one of these: 1++++ = parent,-1=text,-1=value,-2=comment,0=topmost parent
 	
 	struct EksParent *firstExtras; ///< in development, not used at the moment
 	
@@ -131,6 +148,8 @@ typedef struct EksParseType
 	char *commentWord; ///< The main string for saving chars in a comment.
 	size_t commentWordSize; ///< The allocated size for the comment string
 	size_t currentCommentWordSize; ///< The current size for the comment-word.
+	
+	int commentNestleSize; ///< for calculating where in the nestling process we are
 
 	//special string cases
 	uint8_t stateBackslash; ///< If it noticed a backslash
@@ -150,7 +169,16 @@ char *eks_parent_get_name(EksParent *tempEksParent);
 
 size_t eks_parent_get_child_amount(EksParent *tempEksParent);
 
-int eks_parent_set(EksParent *tempEksParent, const char *name,EksParentType ptype);
+int eks_parent_set_string(EksParent *tempEksParent, const char *name,EksParentType ptype);
+int eks_parent_set_int(EksParent *tempEksParent, intptr_t name,EksParentType ptype);
+int eks_parent_set_double(EksParent *tempEksParent, double name,EksParentType ptype);
+
+#define eks_parent_set(parent, name, ptype) _Generic((name),	double: eks_parent_set_double, \
+																					float: eks_parent_set_double, \
+																					int: eks_parent_set_int, \
+																					short: eks_parent_set_int, \
+																					intptr_t: eks_parent_set_int, \
+																					default: eks_parent_set_string)(parent, name, ptype)
 
 void eks_parent_fix_structure(EksParent *parentToFix);
 

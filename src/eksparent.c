@@ -21,6 +21,7 @@
 */
 
 #include "eksparent.h"
+#include "misc.h"
 
 EksParent *eks_parent_new(const char *name, EksParentType ptype, EksParent *topParent, EksParent *extras)
 {
@@ -48,20 +49,99 @@ EksParent *eks_parent_new(const char *name, EksParentType ptype, EksParent *topP
 }
 
 /**
-	Get the name/text raw (char*) from a parent object.
+	Get the string (char*) from a parent object.
 	
 	@param tempEksParent
 		the parent to get its child from
 	@return
-		returns the 'name' or NULL if failed
+		returns the 'string' or NULL if failed
 */
-char *eks_parent_get_name(EksParent *tempEksParent)
+char *eks_parent_get_string(EksParent *tempEksParent)
 {
 	if(tempEksParent)
-		return g_strdup(tempEksParent->name);
+	{
+		if(tempEksParent->type!=EKS_PARENT_VALUE_STRING)
+		{
+			return g_strdup(tempEksParent->name);
+		}
+		else if(tempEksParent->type!=EKS_PARENT_VALUE_INT)
+		{
+			/*
+			char tempbuf[22]={0};
+		
+			itoa(tempEksParent->iname,tempbuf,10);
+			
+			int tempbuflen=strlen(tempbuf);
+			
+			char *retbuf=malloc(tempbuflen+1);
+			
+			memcpy(retbuf,tempbuf,tempbuflen);
+			
+			retbuf[tempbuflen]='\0';
+			
+			return retbuf;
+			*/
+			
+			return eks_int_to_string(tempEksParent->iname);
+			
+			//return g_strdup_printf("%li", tempEksParent->iname);
+		}
+		else if(tempEksParent->type!=EKS_PARENT_VALUE_DOUBLE)
+		{
+			return g_strdup_printf("%f", tempEksParent->dname);
+		}
+		
+		eks_error_message("Unknown type/value!");
+	}
+	
+	eks_error_message("The parent was NULL!");
+	return NULL;
+}
+
+/**
+	Get the int from a parent object.
+	
+	@param tempEksParent
+		the parent to get its child from
+	@return
+		returns the int
+*/
+intptr_t eks_parent_get_int(EksParent *tempEksParent)
+{
+	if(tempEksParent->type!=EKS_PARENT_VALUE_INT)
+	{
+		eks_warning_message("The type is not an int!");
+	}
+	
+	if(tempEksParent)
+		return tempEksParent->iname;
 	else
 	{
-		eks_error_message("The temp in parent was NULL!");
+		eks_error_message("The parent was NULL!");
+		return NULL;
+	}
+}
+
+/**
+	Get the double from a parent object.
+	
+	@param tempEksParent
+		the parent to get its child from
+	@return
+		returns the double
+*/
+intptr_t eks_parent_get_double(EksParent *tempEksParent)
+{
+	if(tempEksParent->type!=EKS_PARENT_VALUE_DOUBLE)
+	{
+		eks_warning_message("The type is not a double!");
+	}
+	
+	if(tempEksParent)
+		return tempEksParent->dname;
+	else
+	{
+		eks_error_message("The parent was NULL!");
 		return NULL;
 	}
 }
@@ -156,6 +236,7 @@ void eks_parent_new_first_child(EksParent *topParent)
 			return;
 		}
 		thisParent->name=NULL;
+		thisParent->type=EKS_PARENT_VALUE_STRING;
 		thisParent->firstExtras=NULL;
 		thisParent->structure=0;
 		thisParent->firstChild=NULL;
@@ -186,7 +267,30 @@ void eks_parent_new_first_child(EksParent *topParent)
 	@return
 		will return 1 if it succeded
 */
-int eks_parent_set(EksParent *tempEksParent, const char *name, EksParentType ptype)
+static void eks_parent_set_base(EksParent *tempEksParent, EksParentType ptype)
+{
+	if(ptype==EKS_PARENT_TYPE_TEXT)
+	{
+		tempEksParent->structure=-1;
+		tempEksParent->firstChild=NULL;
+	}
+	else if(ptype==EKS_PARENT_TYPE_COMMENT)
+	{
+		tempEksParent->structure=-2;
+		tempEksParent->firstChild=NULL;
+	}
+	else if((tempEksParent->upperEksParent==NULL || tempEksParent->upperEksParent==tempEksParent) && ptype==EKS_PARENT_TYPE_VALUE)
+	{
+		tempEksParent->structure=0;
+		tempEksParent->upperEksParent=tempEksParent;
+	}
+	else if(ptype==EKS_PARENT_TYPE_VALUE)
+	{
+		tempEksParent->structure=tempEksParent->upperEksParent->structure+1;
+	}
+}
+
+int eks_parent_set_string(EksParent *tempEksParent, const char *name, EksParentType ptype)
 {
 	if(tempEksParent)
 	{
@@ -197,32 +301,49 @@ int eks_parent_set(EksParent *tempEksParent, const char *name, EksParentType pty
 		}
 		else
 			tempEksParent->name=NULL;
-	
-		if(ptype==EKS_PARENT_TYPE_TEXT)
-		{
-			tempEksParent->structure=-1;
-			tempEksParent->firstChild=NULL;
-		}
-		else if(ptype==EKS_PARENT_TYPE_COMMENT)
-		{
-			tempEksParent->structure=-2;
-			tempEksParent->firstChild=NULL;
-		}
-		else if((tempEksParent->upperEksParent==NULL || tempEksParent->upperEksParent==tempEksParent) && ptype==EKS_PARENT_TYPE_VALUE)
-		{
-			tempEksParent->structure=0;
-			tempEksParent->upperEksParent=tempEksParent;
-		}
-		else if(ptype==EKS_PARENT_TYPE_VALUE)
-		{
-			tempEksParent->structure=tempEksParent->upperEksParent->structure+1;
-		}
+			
+		tempEksParent->type=EKS_PARENT_VALUE_STRING;
+		
+		eks_parent_set_base(tempEksParent, ptype);
 		
 		return 1;
 	}
 	
-	//Something went wrong
-	eks_error_message("Could not set parent!");
+	eks_error_message("Could not set string!");
+	return 0;
+}
+
+int eks_parent_set_int(EksParent *tempEksParent, intptr_t name, EksParentType ptype)
+{
+	if(tempEksParent)
+	{
+		tempEksParent->iname=name;
+			
+		tempEksParent->type=EKS_PARENT_VALUE_INT;
+		
+		eks_parent_set_base(tempEksParent, ptype);
+		
+		return 1;
+	}
+	
+	eks_error_message("Could not set string!");
+	return 0;
+}
+
+int eks_parent_set_double(EksParent *tempEksParent, double name, EksParentType ptype)
+{
+	if(tempEksParent)
+	{
+		tempEksParent->dname=name;
+			
+		tempEksParent->type=EKS_PARENT_VALUE_INT;
+		
+		eks_parent_set_base(tempEksParent, ptype);
+		
+		return 1;
+	}
+	
+	eks_error_message("Could not set string!");
 	return 0;
 }
 

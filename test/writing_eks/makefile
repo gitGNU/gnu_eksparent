@@ -61,4 +61,4 @@ debug: all
 	$(DEBUG) ./$(NAME) -x ./../debug_profile
 	
 lib:
-	make -C ./../src/
+	make -C ./../../src/

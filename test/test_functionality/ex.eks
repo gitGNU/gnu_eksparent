@@ -59,6 +59,13 @@ Vanlig text
 
 →→→→→→→→→→→→Vanlig text
 
+/* 
+	nestlingtest
+	/* a comment inside a comment? */
+	
+	/* uj /* supernestling! */ */
+*/
+
 #barn
 	##barn2
 		###o{

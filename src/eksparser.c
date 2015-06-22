@@ -331,32 +331,51 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 	{
 		if(c=='/')
 		{
-			parser->stateComment=EKS_PARENT_STATE_COMMENT_NONE;
-			
-			if(parser->currentCommentWordSize>0)
+			if(parser->commentNestleSize<=0)
 			{
-				char *str=eks_parse_get_text_comment(parser);
-				if(str)
-				{
-					printf("ML COMMENT[%s] %c\n",str,c);
-					
-					eks_parse_set_current_parent_child(parser,str,EKS_PARENT_TYPE_COMMENT);
-					
-					free(str);
-				}
-				parser->currentCommentWordSize=0;
-			}
+				parser->stateComment=EKS_PARENT_STATE_COMMENT_NONE;
 			
-			return;
+				if(parser->currentCommentWordSize>0)
+				{
+					char *str=eks_parse_get_text_comment(parser);
+					if(str)
+					{
+						printf("ML COMMENT[%s] %c\n",str,c);
+					
+						eks_parse_set_current_parent_child(parser,str,EKS_PARENT_TYPE_COMMENT);
+					
+						free(str);
+					}
+					parser->currentCommentWordSize=0;
+				}
+			
+				return;
+			}
+			else
+			{
+				eks_parse_add_char_comment(parser,'*');
+				eks_parse_add_char_comment(parser,'/');
+				parser->commentNestleSize--;
+			}
 		}
 		else
 		{
-			//if(c=='*')
-			//	eks_parse_add_char_comment(parser,c);
-			
+			//eks_parse_add_char_comment(parser,'*');
 			//see below
 			parser->stateComment=EKS_PARENT_STATE_COMMENT_MULTILINE;
 		}
+	}
+	else if(parser->stateComment==EKS_PARENT_STATE_COMMENT_MULTILINE_NESTLE_CHECK)
+	{
+		eks_parse_add_char_comment(parser,'/');
+	
+		if(c=='*')
+		{
+			eks_parse_add_char_comment(parser,'*');
+			parser->commentNestleSize++;
+		}
+		
+		parser->stateComment=EKS_PARENT_STATE_COMMENT_MULTILINE;
 	}
 	
 	if(parser->stateComment==EKS_PARENT_STATE_COMMENT_MULTILINE)
@@ -364,6 +383,10 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 		if(c=='*')
 		{
 			parser->stateComment=EKS_PARENT_STATE_COMMENT_MULTILINE_END_CHECK;
+		}
+		else if(c=='/')
+		{
+			parser->stateComment=EKS_PARENT_STATE_COMMENT_MULTILINE_NESTLE_CHECK;
 		}
 		else
 		{

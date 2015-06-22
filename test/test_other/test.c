@@ -13,40 +13,24 @@
 	The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-	
-	@section DESCRIPTION
-
-	Demo-file that demonstrates the functionality of eks.
 */
 
-/* Info about animals! */
+#include <stdio.h>
+#include <eksparent.h>
+#include "misc.h"
 
-#animals{
-	#dog
-		//a dog type you would love <3
-		##spaniel{
-			#sound:wofff
-			#cuteness:very high
-			#info{
-				this is an awsomely cute dog, which you would love to adore
-			}
-		}
-		//another dog type
-		##mastiff
-		##gah, this dog is just too cute to mention
-	#cats
-		##farmers cat{
-			#sound:meow#cuteness:high
-			
-			#info{
-				Everyone loves this cat!
-			}
-		
-		/*
-		##a cat we dont know[#param1:this #param2:another value]
-			im the spooky cat.
-		*/
-		}
-	#rabbits
-		//something here maybe
+int main(void)
+{
+	intptr_t num=-34534573095;
+	
+	char *str=eks_int_to_string(num);
+	
+	printf("%s %ld\n",str,num);
+	
+	free(str);
+	
+	//lets print that it was successful
+	printf("SUCCESS!!!\n");
+	
+	return 0;
 }
