@@ -19,20 +19,73 @@
 	Demo eks file2
 */
 
-//om { nämns så kommer allting att klassas som text
-//kommentarer slutar på \n
+//test ordinary text
 
 Vanlig text
+blah blah
 
-#aoe{
+//test ordinary test, and some nestling
+
+#textfield{
+	blah blah
+	blah blah
+	bleh bleh
+	
 	#inner{
-		#detta_behandlar_resten_som_en_vektor
+	blah bloh
+	blih blah
+	}
+	
+	//and back to ordinary text
+	blah blah
+	blebb blobb
+}
+
+//test on a vector
+
+#textfield{
+	#vector
+		val1
+		val2
+		val3
+}
+
+//ghostly vectors
+
+#
+	1
+	2
+	3
+	##
+		3
+		4
+		5
+		{m1,m2,m3}
+
+//test other vector
+#vect{val1,val2,val3}
+
+//empty vectors
+#{a1,b1,c1}
+{a2,b2,c2}
+
+#{a,b,#vect{a,b,c}}
+
+//test value
+@value
+
+//test nestling (advanced)
+
+#textblobb{
+	#inner{
+		#even_more_inner			
+			//test annoying tag
 			##"\"inner_inner
 			aoei\""aoeea
-				värde1
-				värde2
-				värde3
-		värde4 //detta kommer in i listan till slutet.
+				val1
+				val2
+				val3
+		värde4 //test with comment in end
 		##ett värde med kommentering... //kommentering
 		@# //avsluta listan, fortsätt med texten
 		detta kommer vid sidan om
@@ -40,62 +93,81 @@ Vanlig text
 	}
 }
 
-#text\{{
-	Detta fungerar som <text>abc<\text> 
+//test with { in the end, and values in between
+
+#text\{
+{
+	blah blah
+	bleh bleh
+	
 	@br
 	
-	//@ behandlas som enskilt meddelande
+	more text
+	text text
+	
+	//a comment in the middle
 	
 	@en_funktion
 	
-	ännu mer text
+	textelitext
+	text text
 
 	/********
-	flerradskommentering
+	wierd multiline comment
 	********/
 }
 
-//* oauoeuoeuoeu test för kommentering */
-
-→→→→→→→→→→→→Vanlig text
 
 /* 
-	nestlingtest
+	testing the nestling functionality of multiline comments
 	/* a comment inside a comment? */
 	
-	/* uj /* supernestling! */ */
+	/* time for supernestling /* supernestling! */ */
 */
 
-#barn
-	##barn2
-		###o{
-			aoeaoe
+//annoying nestling
+
+#start_list
+	##inner_child
+		###val{
+			text inside
 			
 			#aoe
 				hd/thnn
 		}
-
-#test{
-test
-}
-
-#aoe
-	##oeuoeu{
+#testwith\{\}{test}
+#this_one_is_hard
+	##one_with_måsvingar
+	{
 		oeuoeu
+		
+		//this value should not do anything
+		
 		@#
-		Vanlig text
+		
+		ordinary 
+		text text
+		
 		#ouoe
-			##oae{
+			##oae
+			{
+				text text
+				text text
+			
+				/*
+					a comment
+				*/
 
-			/*
-				En kommentering
-			*/
-
-			#ae // kommentering efter
-			aoeaoe
+				#ae // comment after
+					aoeaoe
 			}
 	}
 @#
+
+blebb text
+blebb text
+
+//and even more test
 
 #aoe{
 	#inner{
@@ -137,32 +209,23 @@ test
 		aoe
 }
 
-#testtext{
-AAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAA
-}
+//test with comment in text, should return abjcdefghij
 
-vanlig /* kommentering*/ text
+abcde/* kommentering*/fghij
 
-aou
-#aou
-oei
-eui
-euid
-#euieui
-#1234
+//test with assignments
+
+#var1=hello#var2=hi#var3=hoo
+
+//more advanced
+
 #eoii{
-#var1:aoue #var2{#var:aou2#varin1:#varin2{#varin3{23423}}} #var3{aoeuoeu}
+#var1=aoue #var2{#var=aou2#varin1=#varin2{#varin3{23423}}} #var3{aoeuoeu}
 }
-#var:aoe#var:abc#var:123
-#{a,b,#vect{a,b,c}}
-#
-	1
-	2
-	3
-	##
-		3
-		4
-		5
+
+/* This should display: END! */
+
+END!
+
+#blebb
 

@@ -269,14 +269,9 @@ void eks_parent_new_first_child(EksParent *topParent)
 */
 static void eks_parent_set_base(EksParent *tempEksParent, EksParentType ptype)
 {
-	if(ptype==EKS_PARENT_TYPE_TEXT)
+	if(ptype==EKS_PARENT_TYPE_COMMENT)
 	{
 		tempEksParent->structure=-1;
-		tempEksParent->firstChild=NULL;
-	}
-	else if(ptype==EKS_PARENT_TYPE_COMMENT)
-	{
-		tempEksParent->structure=-2;
 		tempEksParent->firstChild=NULL;
 	}
 	else if((tempEksParent->upperEksParent==NULL || tempEksParent->upperEksParent==tempEksParent) && ptype==EKS_PARENT_TYPE_VALUE)
@@ -284,9 +279,12 @@ static void eks_parent_set_base(EksParent *tempEksParent, EksParentType ptype)
 		tempEksParent->structure=0;
 		tempEksParent->upperEksParent=tempEksParent;
 	}
-	else if(ptype==EKS_PARENT_TYPE_VALUE)
+	else if(ptype==EKS_PARENT_TYPE_VALUE || ptype==EKS_PARENT_TYPE_TEXT)
 	{
 		tempEksParent->structure=tempEksParent->upperEksParent->structure+1;
+		
+		if(ptype==EKS_PARENT_TYPE_TEXT)
+			tempEksParent->firstChild=NULL;
 	}
 }
 
@@ -654,7 +652,7 @@ EksParent* eks_parent_get_last_child(EksParent *tempEksParent)
 	@param tempEksParent NO_FREE
 		the parent to get the parent from
 	@param amount
-		number of times to climb
+		number of times to climb (positive number = upwards, negative = downwards (will create new children if not exists, goes through last child))
 	@return .
 		returns the parent
 */
@@ -667,23 +665,38 @@ EksParent *eks_parent_climb_parent(EksParent *tempEksParent,int amount)
 	
 	if(amount<0)
 	{
-		eks_error_message("Cannot back - times! Amount[%d]",amount);
-		return NULL;
-	}
+		amount=-amount;
 	
-	for(int i=0;i<amount;i++)
-	{
-		tempEksParent=tempEksParent->upperEksParent;
-		
-		//if its the toplevel parent
-		if(tempEksParent==tempEksParent->upperEksParent)
+		for(int i=0;i<amount;i++)
 		{
-			if(madetwice==1)
+			if(tempEksParent->firstChild)
 			{
-				eks_warning_message("You climbed the parent twice! Amount[%d] Name[%s] Structure[%d]",amount,debugparent->name,debugparent->structure);
+				tempEksParent=tempEksParent->firstChild->prevChild;
 			}
+			else
+			{
+				eks_parent_add_children(tempEksParent,1);
+				EksParent *newParent=tempEksParent->firstChild->prevChild;
+				eks_parent_set(newParent,NULL,EKS_PARENT_TYPE_TEXT);
+			}
+		}
+	}
+	else
+	{
+		for(int i=0;i<amount;i++)
+		{
+			tempEksParent=tempEksParent->upperEksParent;
+		
+			//if its the toplevel parent
+			if(tempEksParent==tempEksParent->upperEksParent)
+			{
+				if(madetwice==1)
+				{
+					eks_warning_message("You climbed the parent twice! Amount[%d] Name[%s] Structure[%d]",amount,debugparent->name,debugparent->structure);
+				}
 			
-			madetwice++;
+				madetwice++;
+			}
 		}
 	}
 	
@@ -743,7 +756,7 @@ EksParent* eks_parent_get_child_from_name(EksParent *tempEksParent,const char *t
 */
 int eks_parent_compare_type(EksParent *tempEksParent, EksParentType ptype)
 {
-	return ((ptype==EKS_PARENT_TYPE_VALUE && tempEksParent->structure>=0) || tempEksParent->structure==-ptype);
+	return ((tempEksParent->structure>=0 && (ptype==EKS_PARENT_TYPE_VALUE || (ptype==EKS_PARENT_TYPE_TEXT && tempEksParent->firstChild==NULL))) || (ptype==EKS_PARENT_TYPE_COMMENT && tempEksParent->structure==-1));
 }
 
 /**
@@ -1002,82 +1015,85 @@ char *eks_parent_dump_text(EksParent *topLevelEksParent)
 	
 	if(topLevelEksParent->structure>=0)
 	{
-		//add the hashtag signs, for the structure level.
-		if(topLevelEksParent->structure>0)
+		if(topLevelEksParent->firstChild==NULL)
 		{
-			//if the word does not contain \n or ' '
-			//if(topLevelEksParent->name)
-			//{
-				if((StructureString=malloc(sizeof(char)*(topLevelEksParent->structure+1)))==NULL)
-				{
-					eks_error_message("Failed to allocate space for the returning string!");
-					return NULL;
-				}
+			tabString=malloc(sizeof(char)*(topLevelEksParent->upperEksParent->structure+1));
+			memset(tabString,'\t',topLevelEksParent->upperEksParent->structure);
+			tabString[topLevelEksParent->upperEksParent->structure]='\0';
 		
-				memset(StructureString,'#',topLevelEksParent->structure);
-				StructureString[topLevelEksParent->structure]='\0';
-			
-				if((tabString=malloc(sizeof(char)*(topLevelEksParent->structure)))==NULL)
-				{
-					eks_error_message("Failed to allocate space for the tabs!");
-					return NULL;
-				}
-				memset(tabString,'\t',topLevelEksParent->structure-1);
-				tabString[topLevelEksParent->structure-1]='\0';
-			
-				void *temp=returnString;
-				if(topLevelEksParent->name)
-					returnString=g_strconcat(returnString,tabString,StructureString,topLevelEksParent->name,"\n",NULL);
-				else
-					returnString=g_strconcat(returnString,tabString,StructureString,"\n",NULL);
-				free(temp);
-			//else
-			//{
-			//	returnString=g_strconcat(returnString,"#",topLevelEksParent->name,"{\n",NULL);
-			//}
+			void *temp=returnString;
+			returnString=g_strconcat(returnString,tabString,topLevelEksParent->name,"\n",NULL);
+			free(temp);
 		}
 		else
 		{
-			//if it is a comment (should be improved, this will also include the variables!)
-			void *temp=returnString;
-			returnString=g_strconcat(returnString,"//",topLevelEksParent->name,"\n",NULL);
-			free(temp);
-		}
+			//add the hashtag signs, for the structure level.
+			if(topLevelEksParent->structure>0)
+			{
+				//if the word does not contain \n or ' '
+				//if(topLevelEksParent->name)
+				//{
+					if((StructureString=malloc(sizeof(char)*(topLevelEksParent->structure+1)))==NULL)
+					{
+						eks_error_message("Failed to allocate space for the returning string!");
+						return NULL;
+					}
 		
-		//do it for all the sub-children
-		EksParent *firstUnit=topLevelEksParent->firstChild;
-	
-		if(!firstUnit)
-		{
-			goto skip_unit;
-		}
-		
-		EksParent *loopUnit=firstUnit;
-
-		do
-		{
-			char *temp=eks_parent_dump_text(loopUnit);
-			void *temp2=returnString;
-			returnString=g_strconcat(returnString,temp,NULL);
-			free(temp2);
-			free(temp);
+					memset(StructureString,'#',topLevelEksParent->structure);
+					StructureString[topLevelEksParent->structure]='\0';
 			
-			loopUnit=loopUnit->nextChild;
-		}while(loopUnit!=firstUnit);
+					if((tabString=malloc(sizeof(char)*(topLevelEksParent->structure)))==NULL)
+					{
+						eks_error_message("Failed to allocate space for the tabs!");
+						return NULL;
+					}
+					memset(tabString,'\t',topLevelEksParent->structure-1);
+					tabString[topLevelEksParent->structure-1]='\0';
+			
+					void *temp=returnString;
+					if(topLevelEksParent->name)
+						returnString=g_strconcat(returnString,tabString,StructureString,topLevelEksParent->name,"\n",NULL);
+					else
+						returnString=g_strconcat(returnString,tabString,StructureString,"\n",NULL);
+					free(temp);
+				//else
+				//{
+				//	returnString=g_strconcat(returnString,"#",topLevelEksParent->name,"{\n",NULL);
+				//}
+			}
+			else
+			{
+				//if it is a comment (should be improved, this will also include the variables!)
+				void *temp=returnString;
+				returnString=g_strconcat(returnString,"//",topLevelEksParent->name,"\n",NULL);
+				free(temp);
+			}
 		
-		skip_unit: ;
+			//do it for all the sub-children
+			EksParent *firstUnit=topLevelEksParent->firstChild;
+	
+			if(!firstUnit)
+			{
+				goto skip_unit;
+			}
+		
+			EksParent *loopUnit=firstUnit;
+
+			do
+			{
+				char *temp=eks_parent_dump_text(loopUnit);
+				void *temp2=returnString;
+				returnString=g_strconcat(returnString,temp,NULL);
+				free(temp2);
+				free(temp);
+			
+				loopUnit=loopUnit->nextChild;
+			}while(loopUnit!=firstUnit);
+		
+			skip_unit: ;
+		}
 	}
 	else if(topLevelEksParent->structure==-1)
-	{
-		tabString=malloc(sizeof(char)*(topLevelEksParent->upperEksParent->structure+1));
-		memset(tabString,'\t',topLevelEksParent->upperEksParent->structure);
-		tabString[topLevelEksParent->upperEksParent->structure]='\0';
-		
-		void *temp=returnString;
-		returnString=g_strconcat(returnString,tabString,topLevelEksParent->name,"\n",NULL);
-		free(temp);
-	}
-	else if(topLevelEksParent->structure==-2)
 	{
 		tabString=malloc(sizeof(char)*(topLevelEksParent->upperEksParent->structure+1));
 		memset(tabString,'\t',topLevelEksParent->upperEksParent->structure);

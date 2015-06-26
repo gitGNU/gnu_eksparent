@@ -89,7 +89,7 @@
 	This is the programming standard for the markup language - eks. 
 	Eks is mainly designed not to be bound to the english language (when used). Its also designed mainly to be easy to read.
 	
-	\emph{Note: This is version 0.1 of the language standard, so dont consider it to be fully functional yet...}
+	\emph{Note: This is an early version of the markup language. Functionality of eks may change until version 1.0, an example may be that the ascii char for a vector may be \& one day and # the next.}
 	
 	\newpage
 	
@@ -99,8 +99,84 @@
 	
 	\chapter{Background}
 	
-	My orginal purpose were to create a language which purpose is to be an easy to read, fast to type markup language. With languages such as XML its easy to read for the parser, but not always for the user. 
-	Also XML can take some time to write in. 
+	My orginal purpose were to create a language which purpose is to be an easy to read markup language. 
+	With languages such as XML its easy to read for the parser, but not always for the user. 
+	Also there is some other flaws with XML such as the closing of a tag is unessesarly complicated which also takes plenty of space.
+	Also XML may take some time to write in. 
+	
+	Well i have not only studied XML before going into writing a new markup-language.
+	Pros and cons i can see in other languages is mentioned below.
+
+	\section{XML}
+	
+	Pros:
+	
+	\begin{itemize}
+		\item have multiline comments <!-- comment -->
+		\item easy to understand, simple in design
+	\end{itemize}
+	
+	Cons:
+	
+	\begin{itemize}
+		\item too much text for describing a simple task.
+	\end{itemize}
+	
+	\section{TeX}
+	
+	Pros:
+	
+	\begin{itemize}
+		\item have single-line comments
+		\item fairly easy to understand
+		\item minimalistic for describing \emph{abc} instead of <emph>abc</emph>
+	\end{itemize}
+	
+	Cons:
+	
+	\begin{itemize}
+		\item little possibilities for nestling, reason behind \begin{} and \end{}
+		\item no support for multiline comments
+	\end{itemize}
+	
+	\section{Yaml}
+	
+	Pros:
+	
+	\begin{itemize}
+		\item Looks really nice
+		\item fairly easy to understand
+		\item minimalistic for describing emph:abc instead of <emph>abc</emph>
+		\item nice with linkage
+	\end{itemize}
+	
+	Cons:
+	
+	\begin{itemize}
+		\item no multiline comments
+		\item the intendation may create problems
+		\item the datatype definitions in english may cause future problems
+	\end{itemize}
+	
+	\section{JSON}
+	
+	Pros:
+	
+	\begin{itemize}
+		\item easy to understand
+		\item fairly minimalistic for describing ''emph'':''abc'' instead of <emph>abc</emph>
+	\end{itemize}
+	
+	Cons:
+	
+	\begin{itemize}
+		\item no comments
+		\item plenty of '':s
+	\end{itemize}
+	
+	\section{Others}
+	
+	Other formats such as INI or similar is simple, but have little or bad support for nestling.
 	
 	\section{History}
 	
@@ -173,7 +249,7 @@
 	\begin{itemize}
 		\item Eks should not be bound to knowledge in the english language
 		\item Eks should use symbols found on almost every thinkable keyboard layout (ASCII)
-		\item Eks will focus on readability for humans rather than a type-really-fast language
+		\item Eks will focus on readability for humans rather than a \emph{type-really-fast} language
 	\end{itemize}
 	
 	\chapter{The basics}
@@ -189,7 +265,7 @@
 	This will result in a vector like:
 	
 	\begin{verbatim}
-	{hello world!}
+	toplevel→{hello world!}
 	\end{verbatim}
 	
 	You can then add a subelement like:
@@ -205,11 +281,34 @@
 	Which results into:
 	
 	\begin{verbatim}
-	{hello world!,subelement→{this is some text for the subelement.}}
+	toplevel→{hello world!,subelement→{this is some text for the subelement.}}
 	\end{verbatim}
 	
 	This way is good in situation if you want to write in multiple lines, or just put out some random text.
 	If you then want to list items, its then meant that you should write like this:
+	
+	\begin{verbatim}
+		hello world!
+		
+		#list
+		  first item
+		  second item
+	\end{verbatim}
+	
+	this results into:
+	
+	\begin{verbatim}
+	toplevel→{
+	  hello world!,
+	  list→{first item,second item}
+	}
+	\end{verbatim}
+	
+	this is advantageous if wanting to create a list of items, like this should display a list in a good way.
+	
+	\section{Variables}
+	
+	However it might be good to end lists, this is described below
 	
 	\begin{verbatim}
 		hello world!
@@ -255,6 +354,23 @@
 	}
 	\end{verbatim}
 	
+	Variables (@) works similar to how the lists work (#).
+	depending on where you are, you can insert variables accordingly. A variable may be written like this:
+	
+	\begin{verbatim}
+	@variable
+	\end{verbatim}
+	
+	but its also possible to assign the variable something:
+	
+	\begin{verbatim}
+	@variable=123;
+	\end{verbatim}
+	
+	and whatever you assign inside will be interpreted accordingly, you can even assign eks-content.
+	
+	\section{Nestling and huge lists}
+	
 	Then eks allows huge lists, like:
 	
 	\begin{verbatim}
@@ -272,7 +388,7 @@
 		@#
 		
 		/*
-		  btw, eks supports multi-line comments.
+		  btw, eks support multi-line comments.
 		*/
 		what happens here?
 		
@@ -303,15 +419,13 @@
 		  blah blah
 		}
 		
-		//declaring functions would be nice
-		@@func1(var1,var2){
+		//Using code... maybe it should work similar to php...
+		@%C%{
 		whatever=whatever
 		}
 		
-		//or just use code... maybe it should work similar to php...
-		@@{
-		whatever=whatever
-		}
+		//using functions would be nice
+		@func1(var1,var2)
 		
 		/*
 		  i dunno how this should work... But it should be there
@@ -321,18 +435,18 @@
 		@func(var1,var2)
 		
 		//declaring variables
-		@var1=1234
+		@var1=1234;
 		
 		/*
 		  i dunno how this should work... But it should be there
 		*/
 		
 		//including other files... i really dunno if it should look like this but its an idea.
-		@%./filename.eks
+		@>./filename.eks
 		//or
-		@%./filename.tex
+		@>./filename.tex
 		//or
-		@%./filename.xml		
+		@>./filename.xml		
 		
 	\end{verbatim}
 	

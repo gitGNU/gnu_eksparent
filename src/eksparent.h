@@ -48,6 +48,7 @@ typedef enum EksParentType
 {
 	EKS_PARENT_TYPE_VALUE,
 	EKS_PARENT_TYPE_TEXT,
+	EKS_PARENT_TYPE_VARIABLE,
 	EKS_PARENT_TYPE_COMMENT
 }EksParentType;
 
@@ -68,7 +69,8 @@ typedef enum EksParseStates
 	EKS_PARENT_STATE_NOTHING,
 	EKS_PARENT_STATE_AND_COUNT,
 	EKS_PARENT_STATE_AND_NAME,
-	EKS_PARENT_STATE_VARIABLE
+	EKS_PARENT_STATE_VARIABLE,
+	EKS_PARENT_STATE_AND_AFTER
 }EksParseStates;
 
 /**
@@ -129,7 +131,7 @@ typedef struct EksParseType
 	EksParseStates state; ///< Current state of the statemashine
 	EksParseStateComment stateComment; ///< If it is a comment, we are currently looking into 
 	uint8_t stateVector; ///< Saves if it is in vector mode or not, eg \#obj ← vector mode, or \#obj{\#obj{}} ← not vector mode
-	uint8_t stateColon; ///< Saves if its in colon mode eg, #vect:aoe\n etc
+	uint8_t stateDelegate; ///< Saves if its in colon mode eg, #vect:aoe\n etc
 	
 	//the return parent
 	EksParent *parent; ///< The parent structure we will return
@@ -137,7 +139,7 @@ typedef struct EksParseType
 
 	//for handeling the current amount of #s
 	size_t currentParentLevel; ///< Saving the current amount of \# (levels)
-	size_t previousParentLevel; ///< Saving the previous amount of \# (levels)
+	size_t prevParentLevel; ///< Saving the previous amount of \# (levels, used when changing from ### to #) 
 
 	//for handeling the input of the normal input string
 	char *word; ///< The word, or the string. It will collect in here if it is in a string, like \#something or just a plain word
@@ -207,27 +209,9 @@ int eks_parent_compare_type(EksParent *tempEksParent, EksParentType ptype);
 
 int eks_parent_get_amount_from_type(EksParent *tempEksParent, EksParentType ptype);
 
-/** simplified version of eks_parent_get_amount_from_type.*/
-#define eks_parent_get_amount_from_value_t(tempEksParent) eks_parent_get_amount_from_type(tempEksParent,EKS_PARENT_TYPE_VALUE)
-
-/** simplified version of eks_parent_get_amount_from_type.*/
-#define eks_parent_get_amount_from_text_t(tempEksParent) eks_parent_get_amount_from_type(tempEksParent,EKS_PARENT_TYPE_TEXT)
-
 EksParent *eks_parent_get_child_from_type(EksParent *tempEksParent,int pos, EksParentType ptype);
 
-/** simplified version of eks_parent_get_child_from_type.*/
-#define eks_parent_get_child_from_value_t(tempEksParent,pos) eks_parent_get_child_from_type(tempEksParent,pos,EKS_PARENT_TYPE_VALUE)
-
-/** simplified version of eks_parent_get_child_from_type.*/
-#define eks_parent_get_child_from_text_t(tempEksParent,pos) eks_parent_get_child_from_type(tempEksParent,pos,EKS_PARENT_TYPE_TEXT)
-
 char *eks_parent_get_information_from_type(EksParent *tempEksParent,int pos, EksParentType ptype);
-
-/** simplified version of eks_parent_get_information_from_type.*/
-#define eks_parent_get_information_from_value_t(tempEksParent,pos) eks_parent_get_information_from_type(tempEksParent,pos,EKS_PARENT_TYPE_VALUE)
-
-/** simplified version of eks_parent_get_information_from_type.*/
-#define eks_parent_get_information_from_text_t(tempEksParent,pos) eks_parent_get_information_from_type(tempEksParent,pos,EKS_PARENT_TYPE_TEXT)
 
 void eks_parent_add_children(EksParent *tempEksParent,int num);
 
