@@ -69,6 +69,7 @@ typedef enum EksParseStates
 	EKS_PARENT_STATE_NOTHING,
 	EKS_PARENT_STATE_AND_COUNT,
 	EKS_PARENT_STATE_AND_NAME,
+	EKS_PARENT_STATE_VAR_COUNT,
 	EKS_PARENT_STATE_VARIABLE,
 	EKS_PARENT_STATE_AND_AFTER
 }EksParseStates;
@@ -110,6 +111,8 @@ typedef struct EksParent
 	};
 	uint8_t type; ///< the type used above
 	short structure; ///< The significant structure describing what the object 'is', it can be one of these: 1++++ = parent,-1=text,-1=value,-2=comment,0=topmost parent
+	
+	void *custom; ///< for custom usage for an application, This is a vector with NULL termination
 	
 	struct EksParent *firstExtras; ///< in development, not used at the moment
 	
@@ -218,6 +221,9 @@ void eks_parent_add_children(EksParent *tempEksParent,int num);
 EksParent *eks_parent_add_child_from_type(EksParent *tempParent,char *name, EksParentType ptype);
 
 void eks_parent_destroy(EksParent *tempEksParent,EksBool recursive);
+
+void eks_parent_custom_set(EksParent *tempEksParent,void *content,int pos);
+void *eks_parent_custom_get(EksParent *tempEksParent,int pos);
 
 char *eks_parent_dump_text(EksParent *topLevelEksParent);
 

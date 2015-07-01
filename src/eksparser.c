@@ -267,8 +267,6 @@ static void eks_parse_set_common_nothing(EksParseType *parser)
 		}
 		parser->currentWordSize=0;
 	}
-	
-	parser->stateDelegate=0;
 }
 
 /**
@@ -281,7 +279,8 @@ static void eks_parse_set_common_nothing(EksParseType *parser)
 */
 void eks_parent_parse_char(EksParseType *parser, char c)
 {
-	if(parser->stateComment==EKS_PARENT_STATE_COMMENT)//check comment type
+	//check comment type
+	if(parser->stateComment==EKS_PARENT_STATE_COMMENT)
 	{
 		if(c=='/')
 		{
@@ -401,7 +400,6 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 	******/
 	if(parser->stateComment==EKS_PARENT_STATE_COMMENT_NONE)
 	{
-		//printf("%c",c);
 		if(parser->stateBackslash)
 		{
 			eks_parse_add_char(parser,c);
@@ -416,6 +414,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				return;
 			else if(c=='{')
 			{
+				//go down to state name
 				parser->state=EKS_PARENT_STATE_AND_NAME;
 			}
 			else
@@ -448,17 +447,10 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 			{
 				parser->state=EKS_PARENT_STATE_AND_COUNT;
 				
-				uint8_t tempDelegate=parser->stateDelegate;
-				//size_t tempCurWordSize=parser->currentWordSize;
-				
-				if(tempDelegate)
-					eks_parse_set_common_nothing(parser);
+				eks_parse_set_common_nothing(parser);
 				
 				parser->prevParentLevel=parser->currentParentLevel;
 				parser->currentParentLevel=0;
-				
-				if(!tempDelegate)
-					eks_parse_set_common_nothing(parser);
 			}
 			else if(((c=='\n' && parser->stateVector==1) || c==',') && parser->stateIsString==0)
 			{
@@ -472,8 +464,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 			{
 				eks_parse_set_common_nothing(parser);
 				
-				//and count up
-				
+				//add #
 				parser->currentParentLevel++;
 				
 				//at {
@@ -490,8 +481,6 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				
 				parser->ladder[parser->ladderCurrentAmount-1]=parser->currentParentLevel;
 				
-				//parser->currentParent=eks_parent_climb_parent(parser->currentParent,-(parser->currentParentLevel-parser->prevParentLevel-1));
-				
 				parser->currentParent=eks_parse_set_common_and_list(parser);
 				
 				//relative itself
@@ -504,8 +493,6 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 			//needs more testing
 			else if(c=='}' && parser->stateIsString==0)
 			{
-				uint8_t tempDelegate=parser->stateDelegate;
-				
 				eks_parse_set_common_nothing(parser);
 			
 				parser->ladderCurrentAmount--;
@@ -524,6 +511,14 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 					
 				return;
 			}
+			else if(c==';' && parser->stateIsString==0)
+			{
+				eks_parse_set_common_nothing(parser);
+			
+				parser->currentParent=eks_parent_climb_parent(parser->currentParent,1);
+				parser->currentParentLevel--;
+				parser->prevParentLevel=parser->currentParentLevel;
+			}
 			else if(c=='/' && parser->stateIsString==0)
 			{
 				//for comment
@@ -534,9 +529,11 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 			else if(c=='@' && parser->stateIsString==0)
 			{
 				//for variable
-				parser->state=EKS_PARENT_STATE_VARIABLE;
+				parser->state=EKS_PARENT_STATE_VAR_COUNT;
 				eks_parse_set_common_nothing(parser);
-				return;
+				
+				parser->prevParentLevel=parser->currentParentLevel;
+				parser->currentParentLevel=0;
 			}
 			else
 			{
@@ -554,6 +551,18 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 			else
 			{
 				parser->state=EKS_PARENT_STATE_AND_NAME;
+			}
+		}
+		else if(parser->state==EKS_PARENT_STATE_VAR_COUNT)
+		{
+			if(c=='@')
+			{
+				parser->currentParentLevel++;
+				return;
+			}
+			else
+			{
+				parser->state=EKS_PARENT_STATE_VARIABLE;
 			}
 		}
 		
@@ -576,19 +585,9 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				
 				eks_parse_add_char(parser,c);
 			}
-			else if((c=='=' || c=='\n') && parser->stateIsString==0)
-			{
-				if(c=='=')
-					parser->stateDelegate=1;
-				
+			else if((c==':' || c=='\n') && parser->stateIsString==0)
+			{	
 				parser->state=EKS_PARENT_STATE_AND_AFTER;
-				/*
-				parser->stateVector=1;
-				parser->state=EKS_PARENT_STATE_NOTHING;
-				
-				eks_parse_set_common_and_list(parser);
-				return;
-				*/
 			}
 			else if(c=='/' && parser->stateIsString==0)
 			{
@@ -613,7 +612,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				parser->ladder[parser->ladderCurrentAmount-1]=parser->currentParentLevel;
 				
 				//##(2)->####{(4+1)}
-				printf("DIS:%d\n",-(parser->currentParentLevel-parser->prevParentLevel-1));
+				//printf("DIS:%d\n",-(parser->currentParentLevel-parser->prevParentLevel-1));
 				parser->currentParent=eks_parent_climb_parent(parser->currentParent,-(parser->currentParentLevel-parser->prevParentLevel-1));
 				parser->currentParent=eks_parse_set_common_and_list(parser);
 				
@@ -651,24 +650,21 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 			{
 				parser->state=EKS_PARENT_STATE_NOTHING;
 				
+				//####(4)->@(1->0)
+				printf("POS: %ld %ld\n",parser->currentParentLevel,parser->prevParentLevel);
+				parser->currentParentLevel--;
+				parser->currentParent=eks_parent_climb_parent(parser->currentParent,-(parser->currentParentLevel-parser->prevParentLevel));
+				
 				if(parser->currentWordSize>0)
 				{
 					char *str=eks_parse_get_text(parser);
 					if(str)
 					{
-						printf("VARIABLE[%s]\n",str);
+						printf("VARIABLE<%ld>[%s]\n",parser->currentParentLevel,str);
 						
 						if(strcmp(str,"#")==0)
 						{
-							//b_debug_message("AT @@:END VECTOR: LAST & LENGTH %d\n",parser->currentParentLevel);
-							
-							//get down to previous level
-							parser->currentParent=eks_parent_climb_parent(parser->currentParent,parser->currentParentLevel);
-
-							parser->stateVector=0;
-							
-							parser->prevParentLevel=0;
-							parser->currentParentLevel=0;
+							parser->stateVector^=1;
 						}
 						free(str);
 					}

@@ -202,6 +202,7 @@ blebb text
 			##12345
 		@#
 		aouoeu
+		
 		}
 	}
 	
@@ -215,13 +216,15 @@ abcde/* kommentering*/fghij
 
 //test with assignments
 
-#var1=hello#var2=hi#var3=hoo
+#var1:hello,noo;#var2:hi;#var3:hoo;
 
 //more advanced
 
 #eoii{
-#var1=aoue #var2{#var=aou2#varin1=#varin2{#varin3{23423}}} #var3{aoeuoeu}
+#var1:aoue #var2{#var:aou2#varin1:#varin2{#varin3{23423}}} #var3{aoeuoeu}
 }
+
+#var:a;
 
 /* This should display: END! */
 

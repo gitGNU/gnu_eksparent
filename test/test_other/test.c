@@ -29,6 +29,30 @@ int main(void)
 	
 	free(str);
 	
+	//test custom content
+	
+	EksParent *test=eks_parent_new("test", EKS_PARENT_TYPE_TEXT, NULL, NULL);
+	
+	eks_parent_custom_set(test,(void*)"hello there!",-1);
+	eks_parent_custom_set(test,(void*)(intptr_t)123,-1);
+
+	//printf("pos1 = %ld, pos2 = %ld\n",pos1,pos2);
+	
+	char *strtest=eks_parent_custom_get(test,0);
+	intptr_t numtest=(intptr_t)eks_parent_custom_get(test,1);
+	
+	printf("value[0] = %s, value[1] = %ld\n",strtest,numtest);
+	
+	eks_parent_custom_set(test,(void*)"hello hi!",2);
+	
+	strtest=eks_parent_custom_get(test,0);
+	numtest=(intptr_t)eks_parent_custom_get(test,1);
+	char *newstr=strtest=eks_parent_custom_get(test,2);
+	
+	printf("value[0] = %s, value[1] = %ld %s\n",strtest,numtest,newstr);
+	
+	eks_parent_destroy(test,EKS_TRUE);
+	
 	//lets print that it was successful
 	printf("SUCCESS!!!\n");
 	

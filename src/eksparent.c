@@ -34,6 +34,7 @@ EksParent *eks_parent_new(const char *name, EksParentType ptype, EksParent *topP
 	
 	thisParent->firstExtras=extras;
 	thisParent->firstChild=NULL;
+	thisParent->custom=NULL;
 	
 	if(topParent)
 		thisParent->upperEksParent=topParent;
@@ -890,6 +891,7 @@ void eks_parent_add_children(EksParent *tempEksParent,int num)
 				EksParent *newParent=malloc(sizeof(EksParent));
 		
 				newParent->name=NULL;
+				newParent->custom=NULL;
 				newParent->firstExtras=NULL;
 				newParent->structure=0;
 				newParent->firstChild=NULL;
@@ -962,6 +964,7 @@ static void eks_parent_destroy_below(EksParent *tempEksParent)
 	//free the core
 	eks_parent_destroy(tempEksParent->firstExtras,EKS_TRUE);
 	free(tempEksParent->name);
+	free(tempEksParent->custom);
 	free(tempEksParent);
 }
 
@@ -995,6 +998,82 @@ void eks_parent_destroy(EksParent *tempEksParent,EksBool recursive)
 		if(recursive)
 			eks_parent_destroy_below(tempEksParent);
 	}
+}
+
+/**
+	Add custom information for the parent.
+	This can be whatever.
+
+	@param tempEksParent
+		the parent to insert the content into
+	@param
+		content, the content to insert.
+*/
+void eks_parent_custom_set(EksParent *tempEksParent,void *content,int pos)
+{
+	void **vector=tempEksParent->custom;
+
+	size_t len=0;
+	
+	if(vector)
+		while(*vector)
+		{
+			len++;	
+			vector++;
+		}
+	
+	vector=tempEksParent->custom;
+	
+	if(pos<0)
+	{
+		len++;
+		vector=realloc(vector,sizeof(void*)*(len+1));
+		
+		vector[len-1]=content;
+		vector[len]=NULL;
+	}
+	else
+	{
+		if(len<(pos+1))
+		{
+			vector=realloc(vector,sizeof(void*)*(pos+1+1));
+			vector[pos]=content;
+			vector[pos+1]=NULL;
+		}
+		else
+			vector[pos]=content;
+	}
+	
+	tempEksParent->custom=vector;
+}
+
+/**
+	Get the content from a custom position
+	
+	@param tempEksParent
+		the parent to read from
+	@param pos
+		the position in the vector
+*/
+void *eks_parent_custom_get(EksParent *tempEksParent,int pos)
+{
+	void **vector=tempEksParent->custom;
+
+	int len=0;
+	
+	while(*vector)
+	{
+		len++;	
+		vector++;
+	}
+	
+	if(pos>len)
+	{
+		eks_error_message("Your position is too high! len: %d, pos: %d",len,pos);
+		return NULL;
+	}
+	
+	return ((void**)(tempEksParent->custom))[pos];
 }
 
 /**
