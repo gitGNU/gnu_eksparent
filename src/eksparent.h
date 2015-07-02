@@ -170,7 +170,11 @@ typedef struct EksParseType
 
 EksParent *eks_parent_new(const char *name, EksParentType ptype, EksParent *topParent, EksParent *extras);
 
-char *eks_parent_get_name(EksParent *tempEksParent);
+char *eks_parent_get_string(EksParent *tempEksParent);
+intptr_t eks_parent_get_int(EksParent *tempEksParent);
+double eks_parent_get_double(EksParent *tempEksParent);
+
+void eks_parent_foreach_child(EksParent *theParent,void *func,void *inparam);
 
 size_t eks_parent_get_child_amount(EksParent *tempEksParent);
 

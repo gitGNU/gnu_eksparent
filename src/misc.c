@@ -19,8 +19,12 @@
 	The c-file for other useful functions
 */
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <ctype.h>
+#include <math.h>
+#include "eksparent.h"
 #include "misc.h"
 
 /**
@@ -78,4 +82,156 @@ char *eks_int_to_string(intptr_t num)
 		length--;
 	}
 	return retString;
+}
+
+/**
+	get the numerical value of a char ('0'=>0,'A'=>10)
+	
+	@param c
+		the input char
+	@return
+		the numerical value
+*/
+static int eks_get_char_numerical_value(char c)
+{
+	if(c>='0' && c<='9')
+		return c-'0';
+	else if(tolower(c)>='a' && tolower(c)<='z')
+		return tolower(c)-'a'+10;
+	else
+		return -1;
+}
+
+/**
+	String to doublefunction.
+	Should be able to convert from these formats:
+	123
+	123.123
+	.123
+	0xfff.fff
+	0b101.101
+	1.3e-4.
+	should also support minus, and underscores '_'.
+	
+	@param str
+		input string to read from, the string requires to be at least size 1 or higher to work.
+	@param out
+		the pointer to the output, in which we will write to
+	@return
+		0=string, cannot convert, 1=double
+*/
+EksParentValue eks_string_to_double(const char *str,double *outd,intptr_t *outi)
+{
+	char *strchange=(char*)str;
+	char c;
+	int cnum;
+			
+	int isminus=1;
+	uint8_t decimalpoint=0;
+	uint8_t type=10; //0x or 0b
+	
+	intptr_t maindata=0;
+	intptr_t remainder=0;
+	intptr_t isfloat=0;
+	int remaindercount=0;
+	double preexponent=0;
+	uint8_t exponenton=0;
+	
+	if(str[0]=='-')
+	{
+		isminus=-1;
+		strchange++;
+	}
+		
+	if(str[0]=='0')
+	{
+		if(str[1]=='x' || str[1]=='X')
+		{
+			type=16;
+			strchange+=2;
+		}
+		else if(str[1]=='b' || str[1]=='B')
+		{
+			type=2;
+			strchange+=2;
+		}
+		else if(str[1]=='o' || str[1]=='O')
+		{
+			type=8;
+			strchange+=2;
+		}
+	}
+	
+	while(*strchange)
+	{
+		c=*strchange;
+		cnum=eks_get_char_numerical_value(c);
+		
+		if(c=='.')
+		{
+			isfloat=1;
+			decimalpoint=1;
+			goto nextchar;
+		}
+		else if(c=='e' || c=='E')
+		{
+			exponenton=1;
+			preexponent=(double)isminus*((double)maindata+(remainder/pow(type,remaindercount)));
+			
+			maindata=0;
+			remainder=0;
+			remaindercount=0;
+			decimalpoint=0;
+			
+			if(strchange[1]=='-')
+			{
+				isminus=-1;
+				strchange++;
+			}
+			else
+				isminus=1;
+				
+			goto nextchar;
+		}
+		
+		if(cnum < 0 || cnum >= type)
+			return EKS_PARENT_VALUE_STRING;
+		else
+		{
+			if(cnum<type)
+			{
+				if(!decimalpoint)
+				{
+					maindata=maindata*type+cnum;
+				}
+				else
+				{
+					remainder=remainder*type+cnum;
+					remaindercount++;
+				}
+			}
+		}
+			
+		nextchar:
+			
+		strchange++;
+	}
+	
+	if(isfloat)
+	{
+		if(exponenton)
+		{
+			//printf("exp: %f %d %f\n",preexponent,type,(double)isminus*((double)maindata+(remainder/pow(type,remaindercount))));
+			*outd=preexponent*pow(type,(double)isminus*((double)maindata+(remainder/pow(type,remaindercount))));
+		}
+		else
+			*outd=(double)isminus*((double)maindata+(remainder/pow(type,remaindercount)));
+			
+		return EKS_PARENT_VALUE_DOUBLE;
+	}
+	else
+	{
+		*outi=isminus*(maindata);
+		return EKS_PARENT_VALUE_INT;
+	}
 }

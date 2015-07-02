@@ -201,28 +201,6 @@ static char *eks_parse_get_text_std(char *word,size_t wordSize,size_t currentWor
 #define eks_parse_get_text_comment(parser) eks_parse_get_text_std(parser->commentWord,parser->commentWordSize,parser->currentCommentWordSize)
 
 /**
-	Some sort of glue to eks_parent_set, but for the parsing. Will set something for a new child.
-	See eks_parent_set
-
-	@param parser
-		the parsing object
-	@param text
-		text to add
-	@param ptype
-		type of the structure
-*/
-static void eks_parse_set_current_parent_child(EksParseType *parser, char *text, EksParentType ptype)
-{
-	EksParent *tparent;
-			
-	tparent=parser->currentParent;
-	
-	eks_parent_add_children(tparent,1);
-	tparent=eks_parent_get_last_child(tparent);
-	eks_parent_set(tparent,text,ptype);
-}
-
-/**
 	Happens when the "and name" (\#\#name) is finnished and wants to do something with the name.
 	
 	@param parser
@@ -234,9 +212,7 @@ static EksParent *eks_parse_set_common_and_list(EksParseType *parser)
 
 	printf("AND LIST<%d>[%s]\n",(int)parser->currentParentLevel,str);
 	
-	eks_parent_add_children(parser->currentParent,1);
-	EksParent *tempParent=eks_parent_get_last_child(parser->currentParent);
-	eks_parent_set(tempParent,str,EKS_PARENT_TYPE_VALUE);
+	EksParent *tempParent=eks_parent_add_child_from_type(parser->currentParent,str,EKS_PARENT_TYPE_VALUE);
 	
 	if(str)
 		free(str);
@@ -261,7 +237,7 @@ static void eks_parse_set_common_nothing(EksParseType *parser)
 		{
 			printf("<%d>[%s]\n",(int)parser->currentParentLevel,str);
 			
-			eks_parse_set_current_parent_child(parser,str,EKS_PARENT_TYPE_TEXT);
+			eks_parent_add_child_from_type(parser->currentParent,str,EKS_PARENT_TYPE_TEXT);
 			
 			free(str);
 		}
@@ -315,7 +291,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				{
 					printf("COMMENT<%ld>[%s]\n",parser->currentParentLevel,str);
 					
-					eks_parse_set_current_parent_child(parser,str,EKS_PARENT_TYPE_COMMENT);
+					eks_parent_add_child_from_type(parser->currentParent,str,EKS_PARENT_TYPE_COMMENT);
 					
 					free(str);
 				}
@@ -342,7 +318,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 					{
 						printf("ML COMMENT<%ld>[%s] %c\n",parser->currentParentLevel,str,c);
 					
-						eks_parse_set_current_parent_child(parser,str,EKS_PARENT_TYPE_COMMENT);
+						eks_parent_add_child_from_type(parser->currentParent,str,EKS_PARENT_TYPE_COMMENT);
 					
 						free(str);
 					}

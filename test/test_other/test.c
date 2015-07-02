@@ -21,13 +21,20 @@
 
 int main(void)
 {
-	intptr_t num=-34534573095;
+	intptr_t num=1;
 	
 	char *str=eks_int_to_string(num);
 	
-	printf("%s %ld\n",str,num);
+	printf("test eks_int_to_string: %s %ld\n",str,num);
 	
 	free(str);
+	
+	double val1=0;
+	intptr_t val2=0;
+	
+	int ok=eks_string_to_double("0o123.3e-5",&val1,&val2);
+	
+	printf("test eks_string_to_double: type=%d double=%f int=%d\n",ok,val1,val2);
 	
 	//test custom content
 	

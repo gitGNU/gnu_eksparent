@@ -41,7 +41,7 @@ EksParent *eks_parent_new(const char *name, EksParentType ptype, EksParent *topP
 	else
 		thisParent->upperEksParent=thisParent;
 	
-	eks_parent_set(thisParent,name,ptype);
+	eks_parent_set_string(thisParent,name,ptype);
 	
 	thisParent->nextChild=thisParent;
 	thisParent->prevChild=thisParent;
@@ -61,33 +61,15 @@ char *eks_parent_get_string(EksParent *tempEksParent)
 {
 	if(tempEksParent)
 	{
-		if(tempEksParent->type!=EKS_PARENT_VALUE_STRING)
+		if(tempEksParent->type==EKS_PARENT_VALUE_STRING)
 		{
 			return g_strdup(tempEksParent->name);
 		}
-		else if(tempEksParent->type!=EKS_PARENT_VALUE_INT)
+		else if(tempEksParent->type==EKS_PARENT_VALUE_INT)
 		{
-			/*
-			char tempbuf[22]={0};
-		
-			itoa(tempEksParent->iname,tempbuf,10);
-			
-			int tempbuflen=strlen(tempbuf);
-			
-			char *retbuf=malloc(tempbuflen+1);
-			
-			memcpy(retbuf,tempbuf,tempbuflen);
-			
-			retbuf[tempbuflen]='\0';
-			
-			return retbuf;
-			*/
-			
 			return eks_int_to_string(tempEksParent->iname);
-			
-			//return g_strdup_printf("%li", tempEksParent->iname);
 		}
-		else if(tempEksParent->type!=EKS_PARENT_VALUE_DOUBLE)
+		else if(tempEksParent->type==EKS_PARENT_VALUE_DOUBLE)
 		{
 			return g_strdup_printf("%f", tempEksParent->dname);
 		}
@@ -131,7 +113,7 @@ intptr_t eks_parent_get_int(EksParent *tempEksParent)
 	@return
 		returns the double
 */
-intptr_t eks_parent_get_double(EksParent *tempEksParent)
+double eks_parent_get_double(EksParent *tempEksParent)
 {
 	if(tempEksParent->type!=EKS_PARENT_VALUE_DOUBLE)
 	{
@@ -143,7 +125,7 @@ intptr_t eks_parent_get_double(EksParent *tempEksParent)
 	else
 	{
 		eks_error_message("The parent was NULL!");
-		return NULL;
+		return 0.0;
 	}
 }
 
@@ -239,6 +221,7 @@ void eks_parent_new_first_child(EksParent *topParent)
 		thisParent->name=NULL;
 		thisParent->type=EKS_PARENT_VALUE_STRING;
 		thisParent->firstExtras=NULL;
+		thisParent->custom=NULL;
 		thisParent->structure=0;
 		thisParent->firstChild=NULL;
 		
@@ -296,12 +279,19 @@ int eks_parent_set_string(EksParent *tempEksParent, const char *name, EksParentT
 		int nameLen=name?strlen(name):0;
 		if(name!=NULL && nameLen>0)
 		{
-			tempEksParent->name=g_strndup(name,nameLen);
+			int type=eks_string_to_double(name,&tempEksParent->dname,&tempEksParent->iname);
+			
+			tempEksParent->type=type;
+			
+			if(type==0)
+				tempEksParent->name=g_strndup(name,nameLen);
 		}
 		else
+		{
 			tempEksParent->name=NULL;
 			
-		tempEksParent->type=EKS_PARENT_VALUE_STRING;
+			tempEksParent->type=EKS_PARENT_VALUE_STRING;
+		}
 		
 		eks_parent_set_base(tempEksParent, ptype);
 		
@@ -335,7 +325,7 @@ int eks_parent_set_double(EksParent *tempEksParent, double name, EksParentType p
 	{
 		tempEksParent->dname=name;
 			
-		tempEksParent->type=EKS_PARENT_VALUE_INT;
+		tempEksParent->type=EKS_PARENT_VALUE_DOUBLE;
 		
 		eks_parent_set_base(tempEksParent, ptype);
 		
@@ -356,18 +346,11 @@ int eks_parent_set_double(EksParent *tempEksParent, double name, EksParentType p
 */
 void eks_parent_fix_structure(EksParent *parentToFix)
 {
-	if(parentToFix->structure>=0 && parentToFix->upperEksParent!=parentToFix)
+	if(parentToFix && parentToFix->structure>=0 && parentToFix->firstChild && parentToFix->upperEksParent!=parentToFix)
 	{
 		parentToFix->structure=parentToFix->upperEksParent->structure+1;
 		
 		EksParent *firstUnit=parentToFix->firstChild;
-	
-		if(!firstUnit)
-		{
-			//maybe bad error message
-			eks_error_message("No first child?");
-			return;
-		}
 		
 		EksParent *loopUnit=firstUnit;
 
@@ -678,7 +661,7 @@ EksParent *eks_parent_climb_parent(EksParent *tempEksParent,int amount)
 			{
 				eks_parent_add_children(tempEksParent,1);
 				EksParent *newParent=tempEksParent->firstChild->prevChild;
-				eks_parent_set(newParent,NULL,EKS_PARENT_TYPE_TEXT);
+				eks_parent_set_string(newParent,NULL,EKS_PARENT_TYPE_TEXT);
 			}
 		}
 	}
@@ -891,6 +874,7 @@ void eks_parent_add_children(EksParent *tempEksParent,int num)
 				EksParent *newParent=malloc(sizeof(EksParent));
 		
 				newParent->name=NULL;
+				newParent->type=EKS_PARENT_VALUE_STRING;
 				newParent->custom=NULL;
 				newParent->firstExtras=NULL;
 				newParent->structure=0;
@@ -932,7 +916,7 @@ EksParent *eks_parent_add_child_from_type(EksParent *tempParent,char *name, EksP
 {
 	eks_parent_add_children(tempParent,1);
 	EksParent *newParent=eks_parent_get_last_child(tempParent);
-	eks_parent_set(newParent,name,ptype);
+	eks_parent_set_string(newParent,name,ptype);
 	return newParent;
 }
 
@@ -963,7 +947,9 @@ static void eks_parent_destroy_below(EksParent *tempEksParent)
 
 	//free the core
 	eks_parent_destroy(tempEksParent->firstExtras,EKS_TRUE);
-	free(tempEksParent->name);
+	
+	if(tempEksParent->type==EKS_PARENT_VALUE_STRING)
+		free(tempEksParent->name);
 	free(tempEksParent->custom);
 	free(tempEksParent);
 }
@@ -1092,6 +1078,8 @@ char *eks_parent_dump_text(EksParent *topLevelEksParent)
 	
 	char *tabString=NULL;
 	
+	char *thisname=eks_parent_get_string(topLevelEksParent);
+	
 	if(topLevelEksParent->structure>=0)
 	{
 		if(topLevelEksParent->firstChild==NULL)
@@ -1101,7 +1089,7 @@ char *eks_parent_dump_text(EksParent *topLevelEksParent)
 			tabString[topLevelEksParent->upperEksParent->structure]='\0';
 		
 			void *temp=returnString;
-			returnString=g_strconcat(returnString,tabString,topLevelEksParent->name,"\n",NULL);
+			returnString=g_strconcat(returnString,tabString,thisname,"\n",NULL);
 			free(temp);
 		}
 		else
@@ -1110,7 +1098,7 @@ char *eks_parent_dump_text(EksParent *topLevelEksParent)
 			if(topLevelEksParent->structure>0)
 			{
 				//if the word does not contain \n or ' '
-				//if(topLevelEksParent->name)
+				//if(thisname)
 				//{
 					if((StructureString=malloc(sizeof(char)*(topLevelEksParent->structure+1)))==NULL)
 					{
@@ -1130,21 +1118,21 @@ char *eks_parent_dump_text(EksParent *topLevelEksParent)
 					tabString[topLevelEksParent->structure-1]='\0';
 			
 					void *temp=returnString;
-					if(topLevelEksParent->name)
-						returnString=g_strconcat(returnString,tabString,StructureString,topLevelEksParent->name,"\n",NULL);
+					if(thisname)
+						returnString=g_strconcat(returnString,tabString,StructureString,thisname,"\n",NULL);
 					else
 						returnString=g_strconcat(returnString,tabString,StructureString,"\n",NULL);
 					free(temp);
 				//else
 				//{
-				//	returnString=g_strconcat(returnString,"#",topLevelEksParent->name,"{\n",NULL);
+				//	returnString=g_strconcat(returnString,"#",thisname,"{\n",NULL);
 				//}
 			}
 			else
 			{
 				//if it is a comment (should be improved, this will also include the variables!)
 				void *temp=returnString;
-				returnString=g_strconcat(returnString,"//",topLevelEksParent->name,"\n",NULL);
+				returnString=g_strconcat(returnString,"//",thisname,"\n",NULL);
 				free(temp);
 			}
 		
@@ -1179,12 +1167,13 @@ char *eks_parent_dump_text(EksParent *topLevelEksParent)
 		tabString[topLevelEksParent->upperEksParent->structure]='\0';
 		
 		void *temp=returnString;
-		returnString=g_strconcat(returnString,tabString,"/*",topLevelEksParent->name,"*/\n",NULL);
+		returnString=g_strconcat(returnString,tabString,"/*",thisname,"*/\n",NULL);
 		free(temp);
 	}
 	
 	free(StructureString);
 	free(tabString);
+	free(thisname);
 	
 	return returnString;
 }

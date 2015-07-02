@@ -32,8 +32,8 @@ void search_for_cuteness(EksParent *theParent,void *inparam)
 	//if we found the cuteness factor <3
 	if(strcmp(theParent->name,"cuteness")==0)
 	{
-		char *animal=eks_parent_get_name(theParent->upperEksParent);
-		char *cutenessFactor=eks_parent_get_name(eks_parent_get_first_child(theParent));
+		char *animal=eks_parent_get_string(theParent->upperEksParent);
+		char *cutenessFactor=eks_parent_get_string(eks_parent_get_first_child(theParent));
 	
 		printf("The animal:  %s,\nhas the cuteness factor:  %s!!! <3 <3 <3\n",animal,cutenessFactor);
 		

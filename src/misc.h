@@ -22,3 +22,5 @@
 #pragma once
 
 char *eks_int_to_string(intptr_t num);
+
+EksParentValue eks_string_to_double(const char *str,double *outd,intptr_t *outi);
