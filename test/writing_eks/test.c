@@ -27,10 +27,10 @@ int main(void)
 	theParent=eks_parent_new("TopLevelParent",EKS_PARENT_TYPE_VALUE,NULL,NULL);
 	
 	//insert a #child with the value text
-	curChildParent=eks_parent_add_child_from_type(theParent,"text",EKS_PARENT_TYPE_VALUE);
+	curChildParent=eks_parent_add_child(theParent,"text",EKS_PARENT_TYPE_VALUE,NULL);
 	
 	//we just want to insert text here
-	eks_parent_add_child_from_type(curChildParent,"blah blah",EKS_PARENT_TYPE_TEXT);
+	eks_parent_add_child(curChildParent,"blah blah",EKS_PARENT_TYPE_VALUE,NULL);
 	
 	//lets see if it works...
 	dumptext=eks_parent_dump_text(theParent);
@@ -42,7 +42,7 @@ int main(void)
 	EksParent *childToInsert;
 	
 	//we will insert this to the #text tag
-	childToInsert=eks_parent_new("even more text...",EKS_PARENT_TYPE_TEXT,NULL,NULL);
+	childToInsert=eks_parent_new("even more text...",EKS_PARENT_TYPE_VALUE,NULL,NULL);
 	
 	//insert it
 	eks_parent_insert(curChildParent,childToInsert);
@@ -56,8 +56,8 @@ int main(void)
 	
 	childToInsert=eks_parent_new("another_text_tag",EKS_PARENT_TYPE_VALUE,NULL,NULL);
 	
-	eks_parent_add_child_from_type(childToInsert,"this should contain interesting text...",EKS_PARENT_TYPE_TEXT);
-	eks_parent_add_child_from_type(childToInsert,"even more text...",EKS_PARENT_TYPE_TEXT);
+	eks_parent_add_child(childToInsert,"this should contain interesting text...",EKS_PARENT_TYPE_VALUE,NULL);
+	eks_parent_add_child(childToInsert,"even more text...",EKS_PARENT_TYPE_VALUE,NULL);
 	
 	//lets see if it is on its own...
 	dumptext=eks_parent_dump_text(childToInsert);

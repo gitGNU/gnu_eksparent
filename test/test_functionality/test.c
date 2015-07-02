@@ -47,9 +47,9 @@ int main(void)
 	//test internal destroy
 	eks_parent_destroy(test->firstChild,EKS_TRUE);
 	
-	eks_parent_destroy(test->firstChild,EKS_TRUE);
+	//eks_parent_destroy(test->firstChild,EKS_TRUE);
 	
-	eks_parent_destroy(test->firstChild,EKS_TRUE);
+	//eks_parent_destroy(test->firstChild,EKS_TRUE);
 	
 	eks_parent_destroy(test,EKS_TRUE);
 	

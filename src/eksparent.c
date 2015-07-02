@@ -23,6 +23,59 @@
 #include "eksparent.h"
 #include "misc.h"
 
+/**
+	This function defines the defaults of the EksParent structure.
+	
+	@param thisParent
+		The EksParent Structure to set the values from
+	@param name
+		the name to the EksParent structure
+	@param ptype
+		the type of the object
+	@return
+		will return 1 if it succeded
+*/
+static void eks_parent_set_base(EksParent *thisParent, EksParentType ptype)
+{
+	if(ptype==EKS_PARENT_TYPE_COMMENT)
+	{
+		thisParent->structure=-1;
+	}
+	else if(ptype==EKS_PARENT_TYPE_VALUE)
+	{
+		if(thisParent->upperEksParent==NULL || thisParent->upperEksParent==thisParent)
+		{
+			thisParent->structure=0;
+			thisParent->upperEksParent=thisParent;
+		}
+		else
+		{
+			thisParent->structure=thisParent->upperEksParent->structure+1;
+		}
+	}
+	else
+	{
+		thisParent->structure=-10;
+	}
+	
+	thisParent->custom=NULL;
+	thisParent->firstChild=NULL;
+}
+
+/**
+	create a new parent
+	
+	@param name
+		the name to use
+	@param ptype
+		the type to use
+	@param topParent
+		the toplevel parent to use
+	@param extras
+		the extras to use
+	@return
+		returns the new eksparent
+*/
 EksParent *eks_parent_new(const char *name, EksParentType ptype, EksParent *topParent, EksParent *extras)
 {
 	EksParent *thisParent=malloc(sizeof(EksParent));
@@ -32,16 +85,15 @@ EksParent *eks_parent_new(const char *name, EksParentType ptype, EksParent *topP
 		return NULL;
 	}
 	
-	thisParent->firstExtras=extras;
-	thisParent->firstChild=NULL;
-	thisParent->custom=NULL;
-	
 	if(topParent)
 		thisParent->upperEksParent=topParent;
 	else
 		thisParent->upperEksParent=thisParent;
 	
-	eks_parent_set_string(thisParent,name,ptype);
+	thisParent->firstExtras=extras;
+	
+	eks_parent_set_base(thisParent,ptype);
+	eks_parent_set_string(thisParent,name);
 	
 	thisParent->nextChild=thisParent;
 	thisParent->prevChild=thisParent;
@@ -52,26 +104,26 @@ EksParent *eks_parent_new(const char *name, EksParentType ptype, EksParent *topP
 /**
 	Get the string (char*) from a parent object.
 	
-	@param tempEksParent
+	@param thisParent
 		the parent to get its child from
 	@return
 		returns the 'string' or NULL if failed
 */
-char *eks_parent_get_string(EksParent *tempEksParent)
+char *eks_parent_get_string(EksParent *thisParent)
 {
-	if(tempEksParent)
+	if(thisParent)
 	{
-		if(tempEksParent->type==EKS_PARENT_VALUE_STRING)
+		if(thisParent->type==EKS_PARENT_VALUE_STRING)
 		{
-			return g_strdup(tempEksParent->name);
+			return g_strdup(thisParent->name);
 		}
-		else if(tempEksParent->type==EKS_PARENT_VALUE_INT)
+		else if(thisParent->type==EKS_PARENT_VALUE_INT)
 		{
-			return eks_int_to_string(tempEksParent->iname);
+			return eks_int_to_string(thisParent->iname);
 		}
-		else if(tempEksParent->type==EKS_PARENT_VALUE_DOUBLE)
+		else if(thisParent->type==EKS_PARENT_VALUE_DOUBLE)
 		{
-			return g_strdup_printf("%f", tempEksParent->dname);
+			return g_strdup_printf("%f", thisParent->dname);
 		}
 		
 		eks_error_message("Unknown type/value!");
@@ -84,20 +136,20 @@ char *eks_parent_get_string(EksParent *tempEksParent)
 /**
 	Get the int from a parent object.
 	
-	@param tempEksParent
+	@param thisParent
 		the parent to get its child from
 	@return
 		returns the int
 */
-intptr_t eks_parent_get_int(EksParent *tempEksParent)
+intptr_t eks_parent_get_int(EksParent *thisParent)
 {
-	if(tempEksParent->type!=EKS_PARENT_VALUE_INT)
+	if(thisParent->type!=EKS_PARENT_VALUE_INT)
 	{
 		eks_warning_message("The type is not an int!");
 	}
 	
-	if(tempEksParent)
-		return tempEksParent->iname;
+	if(thisParent)
+		return thisParent->iname;
 	else
 	{
 		eks_error_message("The parent was NULL!");
@@ -108,20 +160,20 @@ intptr_t eks_parent_get_int(EksParent *tempEksParent)
 /**
 	Get the double from a parent object.
 	
-	@param tempEksParent
+	@param thisParent
 		the parent to get its child from
 	@return
 		returns the double
 */
-double eks_parent_get_double(EksParent *tempEksParent)
+double eks_parent_get_double(EksParent *thisParent)
 {
-	if(tempEksParent->type!=EKS_PARENT_VALUE_DOUBLE)
+	if(thisParent->type!=EKS_PARENT_VALUE_DOUBLE)
 	{
 		eks_warning_message("The type is not a double!");
 	}
 	
-	if(tempEksParent)
-		return tempEksParent->dname;
+	if(thisParent)
+		return thisParent->dname;
 	else
 	{
 		eks_error_message("The parent was NULL!");
@@ -132,20 +184,20 @@ double eks_parent_get_double(EksParent *tempEksParent)
 /**
 	Do something foreach child
 	
-	@param theParent
+	@param thisParent
 		The parent to do the foreach on
 	@param func
 		The function to run
 	@param inparam
 		The input parameter
 */
-void eks_parent_foreach_child(EksParent *theParent,void *func,void *inparam)
+void eks_parent_foreach_child(EksParent *thisParent,void *func,void *inparam)
 {
 	void (*typefunction)(EksParent*,void*);
 	
 	typefunction=func;
 
-	EksParent *firstUnit=theParent->firstChild;
+	EksParent *firstUnit=thisParent->firstChild;
 	
 	if(!firstUnit)
 	{
@@ -171,16 +223,16 @@ void eks_parent_foreach_child(EksParent *theParent,void *func,void *inparam)
 /**
 	Get the amount of children (all types) from a parent object.
 	
-	@param tempEksParent
+	@param thisParent
 		the parent to count children from
 	@return
 		the amount of children
 */
-size_t eks_parent_get_child_amount(EksParent *tempEksParent)
+size_t eks_parent_get_child_amount(EksParent *thisParent)
 {
 	size_t amount=0;
 
-	EksParent *firstUnit=tempEksParent->firstChild;
+	EksParent *firstUnit=thisParent->firstChild;
 	
 	if(!firstUnit)
 	{
@@ -201,99 +253,66 @@ size_t eks_parent_get_child_amount(EksParent *tempEksParent)
 }
 
 /**
-	Will create the first child for the parent.
+	Set the name as a string.
 	
-	@param topParent
-		the toplevel parent
-	@return
-		the child
-*/
-void eks_parent_new_first_child(EksParent *topParent)
-{
-	if(topParent)
-	{	
-		EksParent *thisParent;
-		if((thisParent=malloc(sizeof(EksParent)))==NULL)
-		{
-			eks_error_message("Failed to allocate space for the child!");
-			return;
-		}
-		thisParent->name=NULL;
-		thisParent->type=EKS_PARENT_VALUE_STRING;
-		thisParent->firstExtras=NULL;
-		thisParent->custom=NULL;
-		thisParent->structure=0;
-		thisParent->firstChild=NULL;
-		
-		thisParent->upperEksParent=topParent;
-		thisParent->nextChild=thisParent;
-		thisParent->prevChild=thisParent;
-		
-		//dont mix up with this one!
-		topParent->firstChild=thisParent;
-		
-		return;
-	}
-	
-	eks_error_message("Could not create the child! %s",topParent->name);
-	return;
-}
-
-/**
-	This function defines the EksParent structure.
-	
-	@param tempEksParent
-		The EksParent Structure to set the values from
+	@param thisParent
+		the input parent
 	@param name
-		the name to the EksParent structure
+		the input string
 	@param ptype
-		the type of the object
+		the type of object, eg text or comment
 	@return
-		will return 1 if it succeded
-*/
-static void eks_parent_set_base(EksParent *tempEksParent, EksParentType ptype)
-{
-	if(ptype==EKS_PARENT_TYPE_COMMENT)
-	{
-		tempEksParent->structure=-1;
-		tempEksParent->firstChild=NULL;
-	}
-	else if((tempEksParent->upperEksParent==NULL || tempEksParent->upperEksParent==tempEksParent) && ptype==EKS_PARENT_TYPE_VALUE)
-	{
-		tempEksParent->structure=0;
-		tempEksParent->upperEksParent=tempEksParent;
-	}
-	else if(ptype==EKS_PARENT_TYPE_VALUE || ptype==EKS_PARENT_TYPE_TEXT)
-	{
-		tempEksParent->structure=tempEksParent->upperEksParent->structure+1;
-		
-		if(ptype==EKS_PARENT_TYPE_TEXT)
-			tempEksParent->firstChild=NULL;
-	}
-}
+		0=fail,1=successful
 
-int eks_parent_set_string(EksParent *tempEksParent, const char *name, EksParentType ptype)
+*/
+int eks_parent_set_string(EksParent *thisParent, const char *name)
 {
-	if(tempEksParent)
+	if(thisParent)
 	{
 		int nameLen=name?strlen(name):0;
 		if(name!=NULL && nameLen>0)
 		{
-			int type=eks_string_to_double(name,&tempEksParent->dname,&tempEksParent->iname);
+			int type=eks_string_to_double(name,&thisParent->dname,&thisParent->iname);
 			
-			tempEksParent->type=type;
+			thisParent->type=type;
 			
-			if(type==0)
-				tempEksParent->name=g_strndup(name,nameLen);
+			if(type==EKS_PARENT_VALUE_STRING)
+				thisParent->name=g_strndup(name,nameLen);
 		}
 		else
 		{
-			tempEksParent->name=NULL;
+			thisParent->name=NULL;
 			
-			tempEksParent->type=EKS_PARENT_VALUE_STRING;
+			thisParent->type=EKS_PARENT_VALUE_STRING;
 		}
 		
-		eks_parent_set_base(tempEksParent, ptype);
+		return 1;
+	}
+	
+	eks_error_message("Could not set string!");
+	return 0;
+}
+
+/**
+	Set the name as a int.
+	
+	@param thisParent
+		the input parent
+	@param name
+		the input integer
+	@param ptype
+		the type of object, eg text or comment
+	@return
+		0=fail,1=successful
+
+*/
+int eks_parent_set_int(EksParent *thisParent, intptr_t name)
+{
+	if(thisParent)
+	{
+		thisParent->iname=name;
+			
+		thisParent->type=EKS_PARENT_VALUE_INT;
 		
 		return 1;
 	}
@@ -302,32 +321,26 @@ int eks_parent_set_string(EksParent *tempEksParent, const char *name, EksParentT
 	return 0;
 }
 
-int eks_parent_set_int(EksParent *tempEksParent, intptr_t name, EksParentType ptype)
-{
-	if(tempEksParent)
-	{
-		tempEksParent->iname=name;
-			
-		tempEksParent->type=EKS_PARENT_VALUE_INT;
-		
-		eks_parent_set_base(tempEksParent, ptype);
-		
-		return 1;
-	}
+/**
+	Set the name as a double.
 	
-	eks_error_message("Could not set string!");
-	return 0;
-}
+	@param thisParent
+		the input parent
+	@param name
+		the input double
+	@param ptype
+		the type of object, eg text or comment
+	@return
+		0=fail,1=successful
 
-int eks_parent_set_double(EksParent *tempEksParent, double name, EksParentType ptype)
+*/
+int eks_parent_set_double(EksParent *thisParent, double name)
 {
-	if(tempEksParent)
+	if(thisParent)
 	{
-		tempEksParent->dname=name;
+		thisParent->dname=name;
 			
-		tempEksParent->type=EKS_PARENT_VALUE_DOUBLE;
-		
-		eks_parent_set_base(tempEksParent, ptype);
+		thisParent->type=EKS_PARENT_VALUE_DOUBLE;
 		
 		return 1;
 	}
@@ -339,18 +352,18 @@ int eks_parent_set_double(EksParent *tempEksParent, double name, EksParentType p
 /**
 	This function will fix the parents children structure, that means that it will set the structure number to the parents+1
 	
-	@param parentToFix
+	@param thisParent
 		The EksParent to fix
 	@return
 		void
 */
-void eks_parent_fix_structure(EksParent *parentToFix)
+void eks_parent_fix_structure(EksParent *thisParent)
 {
-	if(parentToFix && parentToFix->structure>=0 && parentToFix->firstChild && parentToFix->upperEksParent!=parentToFix)
+	if(thisParent && thisParent->structure>=0 && thisParent->firstChild && thisParent->upperEksParent!=thisParent)
 	{
-		parentToFix->structure=parentToFix->upperEksParent->structure+1;
+		thisParent->structure=thisParent->upperEksParent->structure+1;
 		
-		EksParent *firstUnit=parentToFix->firstChild;
+		EksParent *firstUnit=thisParent->firstChild;
 		
 		EksParent *loopUnit=firstUnit;
 
@@ -361,7 +374,7 @@ void eks_parent_fix_structure(EksParent *parentToFix)
 			loopUnit=loopUnit->nextChild;
 		}while(loopUnit!=firstUnit);
 	}
-	else if(parentToFix->structure==0 && parentToFix->upperEksParent==parentToFix)
+	else if(thisParent->structure==0 && thisParent->upperEksParent==thisParent)
 	{
 		eks_error_message("The parent have its topEksParent as its parent, it might crash after this!");
 	}
@@ -418,7 +431,7 @@ int eks_parent_from_child_insert_prev(EksParent *child,EksParent *inEksParent)
 	This function will insert afterwards
 	it will fix so that the EksParents structure is correct.
 	
-	@param thisEksParent
+	@param thisParent
 		The EksParent as reference
 	@param childNum
 		the child you want to insert it into
@@ -453,12 +466,12 @@ int eks_parent_insert(EksParent *topParent,EksParent *inEksParent)
 /**
 	Will clone a parent
 
-	@param thisEksParent NO_FREE
+	@param thisParent NO_FREE
 		EksParent to clone
 	@return NEW
 		a pointer to the cloned parent structure
 */
-EksParent *eks_parent_clone(EksParent *thisEksParent)
+EksParent *eks_parent_clone(EksParent *thisParent)
 {
 	//define parent
 	EksParent *newEksParent;
@@ -466,21 +479,27 @@ EksParent *eks_parent_clone(EksParent *thisEksParent)
 	//assign some memory
 	if((newEksParent=calloc(1,sizeof(EksParent))))
 	{
-		newEksParent->name=g_strndup(thisEksParent->name,strlen(thisEksParent->name));
-		newEksParent->structure=thisEksParent->structure;
+		if(thisParent->type==EKS_PARENT_VALUE_INT)
+			newEksParent->iname=thisParent->iname;
+		else if(thisParent->type==EKS_PARENT_VALUE_DOUBLE)
+			newEksParent->dname=thisParent->dname;
+		else
+			newEksParent->name=g_strdup(thisParent->name);
+			
+		newEksParent->structure=thisParent->structure;
 		
 		newEksParent->nextChild=newEksParent;
 		newEksParent->prevChild=newEksParent;
 		
-		if(thisEksParent->structure==0 || thisEksParent->upperEksParent==thisEksParent)
+		if(thisParent->structure==0 || thisParent->upperEksParent==thisParent)
 		{
 			newEksParent->upperEksParent=newEksParent;
 		}
 		
 		//do it on the bottom ones as well
-		if(thisEksParent->structure>=0)
+		if(thisParent->structure>=0)
 		{
-			EksParent *firstUnit=thisEksParent->firstChild;
+			EksParent *firstUnit=thisParent->firstChild;
 	
 			if(!firstUnit)
 			{
@@ -538,22 +557,22 @@ EksParent *eks_parent_clone(EksParent *thisEksParent)
 /**
 	This function will check the EksParentstructure for a child from a pos.
 	
-	@param tempEksParent NO_FREE
+	@param thisParent NO_FREE
 		The EksParent Structure to check the child from
 	@param pos .
 		the position, 0= first child
 	@return
 		will return 1 if it exists
 */
-int eks_parent_check_child(EksParent *tempEksParent,int pos)
+int eks_parent_check_child(EksParent *thisParent,int pos)
 {
-	return (tempEksParent->firstChild && (tempEksParent->structure>0 || (tempEksParent->structure==0 && tempEksParent->upperEksParent==tempEksParent)));
+	return (thisParent->firstChild && (thisParent->structure>0 || (thisParent->structure==0 && thisParent->upperEksParent==thisParent)));
 }
 
 /**
 	This function will get the EksParentstructure from a child from a pos.
 	
-	@param tempEksParent NO_FREE
+	@param thisParent NO_FREE
 		The EksParent Structure to get the child from
 	@param pos .
 		the position, 0= first child
@@ -561,9 +580,9 @@ int eks_parent_check_child(EksParent *tempEksParent,int pos)
 		this will give the pointer to the EksParent
 */
 
-EksParent* eks_parent_get_child(EksParent *tempEksParent,int pos)
+EksParent* eks_parent_get_child(EksParent *thisParent,int pos)
 {
-	EksParent *firstUnit=tempEksParent->firstChild;
+	EksParent *firstUnit=thisParent->firstChild;
 	
 	if(!firstUnit)
 	{
@@ -585,7 +604,7 @@ EksParent* eks_parent_get_child(EksParent *tempEksParent,int pos)
 		loopUnit=loopUnit->nextChild;
 	}while(loopUnit!=firstUnit);
 	
-	eks_error_message("Your position is probably wrong! Pos[%d] in-EksParent name[%s]",pos,tempEksParent->name);
+	eks_error_message("Your position is probably wrong! Pos[%d] in-EksParent name[%s]",pos,thisParent->name);
 	
 	return NULL;
 }
@@ -593,47 +612,47 @@ EksParent* eks_parent_get_child(EksParent *tempEksParent,int pos)
 /**
 	Get the first child from the EksParent.
 
-	@param tempEksParent NO_FREE
+	@param thisParent NO_FREE
 		the parent to get the child from
 	@return .
 		returns the parent
 */
 
-EksParent* eks_parent_get_first_child(EksParent *tempEksParent)
+EksParent* eks_parent_get_first_child(EksParent *thisParent)
 {
-	if(tempEksParent->firstChild)
+	if(thisParent)
 	{
-		return tempEksParent->firstChild;
+		return thisParent->firstChild;
 	}
 	
-	eks_error_message("Failed to get child!");// There is [%d] children!",tempEksParent->amount);
+	eks_error_message("Failed to get child!");// There is [%d] children!",thisParent->amount);
 	return NULL;
 }
 
 /**
 	Get the last child from the EksParent.
 
-	@param tempEksParent NO_FREE
+	@param thisParent NO_FREE
 		the parent to get the child from
 	@return .
 		returns the parent
 */
 
-EksParent* eks_parent_get_last_child(EksParent *tempEksParent)
+EksParent* eks_parent_get_last_child(EksParent *thisParent)
 {
-	if(tempEksParent->firstChild)
+	if(thisParent && thisParent->firstChild)
 	{
-		return tempEksParent->firstChild->prevChild;
+		return thisParent->firstChild->prevChild;
 	}
 	
-	eks_error_message("Failed to get child!");// There is [%d] children!",tempEksParent->amount);
+	eks_error_message("Failed to get child!");// There is [%d] children!",thisParent->amount);
 	return NULL;
 }
 
 /**
 	Go up a number of parents
 
-	@param tempEksParent NO_FREE
+	@param thisParent NO_FREE
 		the parent to get the parent from
 	@param amount
 		number of times to climb (positive number = upwards, negative = downwards (will create new children if not exists, goes through last child))
@@ -641,9 +660,9 @@ EksParent* eks_parent_get_last_child(EksParent *tempEksParent)
 		returns the parent
 */
 
-EksParent *eks_parent_climb_parent(EksParent *tempEksParent,int amount)
+EksParent *eks_parent_climb_parent(EksParent *thisParent,int amount)
 {
-	EksParent *debugparent=tempEksParent;
+	EksParent *debugparent=thisParent;
 	
 	uint8_t madetwice=0;
 	
@@ -653,15 +672,13 @@ EksParent *eks_parent_climb_parent(EksParent *tempEksParent,int amount)
 	
 		for(int i=0;i<amount;i++)
 		{
-			if(tempEksParent->firstChild)
+			if(thisParent->firstChild)
 			{
-				tempEksParent=tempEksParent->firstChild->prevChild;
+				thisParent=thisParent->firstChild->prevChild;
 			}
 			else
 			{
-				eks_parent_add_children(tempEksParent,1);
-				EksParent *newParent=tempEksParent->firstChild->prevChild;
-				eks_parent_set_string(newParent,NULL,EKS_PARENT_TYPE_TEXT);
+				eks_parent_add_child(thisParent,NULL,EKS_PARENT_TYPE_VALUE,NULL);
 			}
 		}
 	}
@@ -669,14 +686,16 @@ EksParent *eks_parent_climb_parent(EksParent *tempEksParent,int amount)
 	{
 		for(int i=0;i<amount;i++)
 		{
-			tempEksParent=tempEksParent->upperEksParent;
+			thisParent=thisParent->upperEksParent;
 		
 			//if its the toplevel parent
-			if(tempEksParent==tempEksParent->upperEksParent)
+			if(thisParent==thisParent->upperEksParent)
 			{
 				if(madetwice==1)
 				{
-					eks_warning_message("You climbed the parent twice! Amount[%d] Name[%s] Structure[%d]",amount,debugparent->name,debugparent->structure);
+					char *tmpname=eks_parent_get_string(debugparent);
+					eks_warning_message("You climbed the parent twice! Amount[%d] Name[%s] Structure[%d]",amount,tmpname,debugparent->structure);
+					free(tmpname);
 				}
 			
 				madetwice++;
@@ -684,38 +703,40 @@ EksParent *eks_parent_climb_parent(EksParent *tempEksParent,int amount)
 		}
 	}
 	
-	return tempEksParent;
+	return thisParent;
 }
 
 /**
 	This function will get the EksParentstructure from a child from a name.
 	
-	@param tempEksParent
+	@param thisParent
 		The EksParent Structure to get the child from
 	@param tempName
 		The childs name
 	@return
 		this will give the pointer to the EksParent
 */
-EksParent* eks_parent_get_child_from_name(EksParent *tempEksParent,const char *tempName)
+EksParent* eks_parent_get_child_from_name(EksParent *thisParent,const char *tempName)
 {
-	if(!tempEksParent->firstChild)
+	if(!thisParent->firstChild)
 	{
 		eks_error_message("No first child?");
 		return NULL;
 	}
 	
-	if(tempEksParent->structure>=0)
+	if(thisParent->structure>=0)
 	{
-		EksParent *firstUnit=tempEksParent->firstChild;
+		EksParent *firstUnit=thisParent->firstChild;
 		EksParent *loopUnit=firstUnit;
 	
 		do
 		{
-			if(strcmp(loopUnit->name,tempName)==0)
+			char *testname=eks_parent_get_string(loopUnit);
+			if(strcmp(testname,tempName)==0)
 			{
 				return loopUnit;
 			}
+			free(testname);
 			loopUnit=loopUnit->nextChild;
 		}while(loopUnit!=firstUnit);
 		
@@ -731,33 +752,33 @@ EksParent* eks_parent_get_child_from_name(EksParent *tempEksParent,const char *t
 /**
 	Checks if the parent have that type
 
-	@param tempEksParent
+	@param thisParent
 		the parent
 	@param ptype
 		the type
 	@return
 		1 if they are the same 0 if they arent.
 */
-int eks_parent_compare_type(EksParent *tempEksParent, EksParentType ptype)
+int eks_parent_compare_type(EksParent *thisParent, EksParentType ptype)
 {
-	return ((tempEksParent->structure>=0 && (ptype==EKS_PARENT_TYPE_VALUE || (ptype==EKS_PARENT_TYPE_TEXT && tempEksParent->firstChild==NULL))) || (ptype==EKS_PARENT_TYPE_COMMENT && tempEksParent->structure==-1));
+	return ((thisParent->structure>=0 && ptype==EKS_PARENT_TYPE_VALUE) || (ptype==EKS_PARENT_TYPE_COMMENT && thisParent->structure==-1));
 }
 
 /**
 	Get the amount of children from a specific type
 
-	@param tempEksParent
+	@param thisParent
 		in-parent
 	@param ptype
 		type of object
 	@return
 		number of objects
 */
-int eks_parent_get_amount_from_type(EksParent *tempEksParent, EksParentType ptype)
+int eks_parent_get_amount_from_type(EksParent *thisParent, EksParentType ptype)
 {
 	int retamount=0;
 	
-	EksParent *firstUnit=tempEksParent->firstChild;
+	EksParent *firstUnit=thisParent->firstChild;
 	
 	if(!firstUnit)
 	{
@@ -769,7 +790,7 @@ int eks_parent_get_amount_from_type(EksParent *tempEksParent, EksParentType ptyp
 
 	do
 	{
-		//EksParent *child=eks_parent_get_child(tempEksParent,i);
+		//EksParent *child=eks_parent_get_child(thisParent,i);
 		
 		if(eks_parent_compare_type(loopUnit,ptype))
 			retamount++;
@@ -783,16 +804,16 @@ int eks_parent_get_amount_from_type(EksParent *tempEksParent, EksParentType ptyp
 /**
 	Get a specific child from the pos where the type is from, see eks_parent_get_amount_from_type
 	
-	@param tempEksParent
+	@param thisParent
 		the in-parent
 	@param pos
 		position from where we want it
 	@param ptype
 		type of object
 */
-EksParent *eks_parent_get_child_from_type(EksParent *tempEksParent,int pos, EksParentType ptype)
+EksParent *eks_parent_get_child_from_type(EksParent *thisParent,int pos, EksParentType ptype)
 {
-	EksParent *firstUnit=tempEksParent->firstChild;
+	EksParent *firstUnit=thisParent->firstChild;
 	
 	if(!firstUnit)
 	{
@@ -817,15 +838,15 @@ EksParent *eks_parent_get_child_from_type(EksParent *tempEksParent,int pos, EksP
 		loopUnit=loopUnit->nextChild;
 	}while(loopUnit!=firstUnit);
 	
-	eks_error_message("Your position is probably wrong! Pos[%d] in-EksParent name[%s] Type[%d]",pos,tempEksParent->name,ptype);
+	eks_error_message("Your position is probably wrong! Pos[%d] in-EksParent name[%s] Type[%d]",pos,thisParent->name,ptype);
 	
 	return NULL;
 }
 
 /**
-	almost the same as eks_parent_get_name, but here you will get the object first
+	almost the same as eks_parent_get_name, but here you will get from a type such as a comment or value
 	
-	@param tempEksParent
+	@param thisParent
 		the current-level-parent
 	@param pos
 		The position in the parent object
@@ -834,76 +855,21 @@ EksParent *eks_parent_get_child_from_type(EksParent *tempEksParent,int pos, EksP
 	@return
 		the char* to the name of that object
 */
-char *eks_parent_get_information_from_type(EksParent *tempEksParent,int pos, EksParentType ptype)
+char *eks_parent_get_from_type(EksParent *thisParent,int pos, EksParentType ptype)
 {
-	EksParent *tempParent=eks_parent_get_child_from_type(tempEksParent,pos,ptype);
+	EksParent *tempParent=eks_parent_get_child_from_type(thisParent,pos,ptype);
 	
 	if(tempParent)
-		return tempParent->name;
+		return eks_parent_get_string(tempParent);
 		
 	eks_error_message("something went wrong!");
 	return NULL;
 }
 
 /**
-	Add children to a EksParent structure.
+	Add a child to an existing eksparent
 	
-	@param tempEksParent
-		The EksParent structure to add some children to.
-	@param num
-		The amount of children to add.
-	@return
-		void
-*/
-void eks_parent_add_children(EksParent *tempEksParent,int num)
-{
-	if(tempEksParent)
-	{
-		if(num>0)
-		{
-			if(!tempEksParent->firstChild)
-			{
-				eks_parent_new_first_child(tempEksParent);
-				num--;
-			}
-	
-			EksParent *firstParent=tempEksParent->firstChild;
-	
-			for(int i=0;i<num;i++)
-			{
-				EksParent *newParent=malloc(sizeof(EksParent));
-		
-				newParent->name=NULL;
-				newParent->type=EKS_PARENT_VALUE_STRING;
-				newParent->custom=NULL;
-				newParent->firstExtras=NULL;
-				newParent->structure=0;
-				newParent->firstChild=NULL;
-		
-				newParent->upperEksParent=tempEksParent;
-		
-				newParent->prevChild=firstParent->prevChild;
-				newParent->nextChild=firstParent;
-				firstParent->prevChild->nextChild=newParent;
-				firstParent->prevChild=newParent;
-			}
-	
-		}
-		else
-		{
-			eks_error_message("invalid number of new children?\n");
-		}
-	}
-	else
-	{
-		eks_error_message("You need to initiate the parent first!");
-	}
-}
-
-/**
-	Add a child from a type
-
-	@param tempParent
+	@param thisParent
 		the parent to add some children into
 	@param name
 		the name of the new child
@@ -912,25 +878,57 @@ void eks_parent_add_children(EksParent *tempEksParent,int num)
 	@return
 		returns the newly created parent or NULL if fail
 */
-EksParent *eks_parent_add_child_from_type(EksParent *tempParent,char *name, EksParentType ptype)
+EksParent *eks_parent_add_child(EksParent *thisParent,char *name, EksParentType ptype, EksParent *extras)
 {
-	eks_parent_add_children(tempParent,1);
-	EksParent *newParent=eks_parent_get_last_child(tempParent);
-	eks_parent_set_string(newParent,name,ptype);
-	return newParent;
+	EksParent *newParent;
+
+	if(thisParent)
+	{
+		EksParent *firstParent=thisParent->firstChild;
+	
+		if(!firstParent)
+		{
+			newParent=eks_parent_new(name,ptype,thisParent,extras);
+			thisParent->firstChild=newParent;
+			return newParent;
+		}
+		else
+		{
+			newParent=malloc(sizeof(EksParent));
+		
+			newParent->upperEksParent=thisParent;
+		
+			newParent->firstExtras=extras;
+		
+			eks_parent_set_base(newParent,ptype);
+			eks_parent_set_string(newParent,name);
+
+			newParent->prevChild=firstParent->prevChild;
+			newParent->nextChild=firstParent;
+			firstParent->prevChild->nextChild=newParent;
+			firstParent->prevChild=newParent;
+		
+			return newParent;
+		}
+	}
+	else
+	{
+		eks_error_message("You need to initiate the parent first!");
+		return NULL;
+	}
 }
 
 /**
 	Internal function that correctly destroys everything below the current parent
 	
-	@param tempEksParent
+	@param thisParent
 		the temp parent to destroy
 */
-static void eks_parent_destroy_below(EksParent *tempEksParent)
+static void eks_parent_destroy_below(EksParent *thisParent)
 {
-	EksParent *firstUnit=tempEksParent->firstChild;
+	EksParent *firstUnit=thisParent->firstChild;
 	
-	if(tempEksParent->structure>=0 && firstUnit)
+	if(thisParent->structure>=0 && firstUnit)
 	{
 		EksParent *loopUnit=firstUnit;
 		EksParent *sloopUnit;
@@ -946,43 +944,43 @@ static void eks_parent_destroy_below(EksParent *tempEksParent)
 	}
 
 	//free the core
-	eks_parent_destroy(tempEksParent->firstExtras,EKS_TRUE);
+	eks_parent_destroy(thisParent->firstExtras,EKS_TRUE);
 	
-	if(tempEksParent->type==EKS_PARENT_VALUE_STRING)
-		free(tempEksParent->name);
-	free(tempEksParent->custom);
-	free(tempEksParent);
+	if(thisParent->type==EKS_PARENT_VALUE_STRING)
+		free(thisParent->name);
+	free(thisParent->custom);
+	free(thisParent);
 }
 
 /**
 	This is the main free function for the parent structure.
 	
-	@param tempEksParent FREE
+	@param thisParent FREE
 		The EksParent structure to free
 	@param recursive .
 		If you want to free all the children to the EksParent structure.
 	@return
 		void
 */
-void eks_parent_destroy(EksParent *tempEksParent,EksBool recursive)
+void eks_parent_destroy(EksParent *thisParent,EksBool recursive)
 {
-	if(tempEksParent)
+	if(thisParent)
 	{
 		//link the next child and prev child correctly
-		tempEksParent->nextChild->prevChild=tempEksParent->prevChild;
-		tempEksParent->prevChild->nextChild=tempEksParent->nextChild;
+		thisParent->nextChild->prevChild=thisParent->prevChild;
+		thisParent->prevChild->nextChild=thisParent->nextChild;
 		
-		if(tempEksParent->upperEksParent->firstChild==tempEksParent)
+		if(thisParent->upperEksParent->firstChild==thisParent)
 		{
-			if(tempEksParent->nextChild!=tempEksParent && tempEksParent->prevChild!=tempEksParent)
-				tempEksParent->upperEksParent->firstChild=tempEksParent->nextChild;
+			if(thisParent->nextChild!=thisParent && thisParent->prevChild!=thisParent)
+				thisParent->upperEksParent->firstChild=thisParent->nextChild;
 			else
-				tempEksParent->upperEksParent->firstChild=NULL;
+				thisParent->upperEksParent->firstChild=NULL;
 		}
 		
 		//if you want to destroy everything below
 		if(recursive)
-			eks_parent_destroy_below(tempEksParent);
+			eks_parent_destroy_below(thisParent);
 	}
 }
 
@@ -990,14 +988,14 @@ void eks_parent_destroy(EksParent *tempEksParent,EksBool recursive)
 	Add custom information for the parent.
 	This can be whatever.
 
-	@param tempEksParent
+	@param thisParent
 		the parent to insert the content into
 	@param
 		content, the content to insert.
 */
-void eks_parent_custom_set(EksParent *tempEksParent,void *content,int pos)
+void eks_parent_custom_set(EksParent *thisParent,void *content,int pos)
 {
-	void **vector=tempEksParent->custom;
+	void **vector=thisParent->custom;
 
 	size_t len=0;
 	
@@ -1008,7 +1006,7 @@ void eks_parent_custom_set(EksParent *tempEksParent,void *content,int pos)
 			vector++;
 		}
 	
-	vector=tempEksParent->custom;
+	vector=thisParent->custom;
 	
 	if(pos<0)
 	{
@@ -1030,20 +1028,20 @@ void eks_parent_custom_set(EksParent *tempEksParent,void *content,int pos)
 			vector[pos]=content;
 	}
 	
-	tempEksParent->custom=vector;
+	thisParent->custom=vector;
 }
 
 /**
 	Get the content from a custom position
 	
-	@param tempEksParent
+	@param thisParent
 		the parent to read from
 	@param pos
 		the position in the vector
 */
-void *eks_parent_custom_get(EksParent *tempEksParent,int pos)
+void *eks_parent_custom_get(EksParent *thisParent,int pos)
 {
-	void **vector=tempEksParent->custom;
+	void **vector=thisParent->custom;
 
 	int len=0;
 	
@@ -1059,18 +1057,18 @@ void *eks_parent_custom_get(EksParent *tempEksParent,int pos)
 		return NULL;
 	}
 	
-	return ((void**)(tempEksParent->custom))[pos];
+	return ((void**)(thisParent->custom))[pos];
 }
 
 /**
 	Will dump the contents of a parent structure.
 	
-	@param topLevelEksParent NO_FREE
+	@param thisParent NO_FREE
 		The parent to dump the information from
 	@return NEW
 		The output text
 */
-char *eks_parent_dump_text(EksParent *topLevelEksParent)
+char *eks_parent_dump_text(EksParent *thisParent)
 {
 	//FIX FIX FIX (works now but not as i want)
 	char *returnString=calloc(1,sizeof(char));
@@ -1078,15 +1076,15 @@ char *eks_parent_dump_text(EksParent *topLevelEksParent)
 	
 	char *tabString=NULL;
 	
-	char *thisname=eks_parent_get_string(topLevelEksParent);
+	char *thisname=eks_parent_get_string(thisParent);
 	
-	if(topLevelEksParent->structure>=0)
+	if(thisParent->structure>=0)
 	{
-		if(topLevelEksParent->firstChild==NULL)
+		if(thisParent->firstChild==NULL)
 		{
-			tabString=malloc(sizeof(char)*(topLevelEksParent->upperEksParent->structure+1));
-			memset(tabString,'\t',topLevelEksParent->upperEksParent->structure);
-			tabString[topLevelEksParent->upperEksParent->structure]='\0';
+			tabString=malloc(sizeof(char)*(thisParent->upperEksParent->structure+1));
+			memset(tabString,'\t',thisParent->upperEksParent->structure);
+			tabString[thisParent->upperEksParent->structure]='\0';
 		
 			void *temp=returnString;
 			returnString=g_strconcat(returnString,tabString,thisname,"\n",NULL);
@@ -1095,27 +1093,27 @@ char *eks_parent_dump_text(EksParent *topLevelEksParent)
 		else
 		{
 			//add the hashtag signs, for the structure level.
-			if(topLevelEksParent->structure>0)
+			if(thisParent->structure>0)
 			{
 				//if the word does not contain \n or ' '
 				//if(thisname)
 				//{
-					if((StructureString=malloc(sizeof(char)*(topLevelEksParent->structure+1)))==NULL)
+					if((StructureString=malloc(sizeof(char)*(thisParent->structure+1)))==NULL)
 					{
 						eks_error_message("Failed to allocate space for the returning string!");
 						return NULL;
 					}
 		
-					memset(StructureString,'#',topLevelEksParent->structure);
-					StructureString[topLevelEksParent->structure]='\0';
+					memset(StructureString,'#',thisParent->structure);
+					StructureString[thisParent->structure]='\0';
 			
-					if((tabString=malloc(sizeof(char)*(topLevelEksParent->structure)))==NULL)
+					if((tabString=malloc(sizeof(char)*(thisParent->structure)))==NULL)
 					{
 						eks_error_message("Failed to allocate space for the tabs!");
 						return NULL;
 					}
-					memset(tabString,'\t',topLevelEksParent->structure-1);
-					tabString[topLevelEksParent->structure-1]='\0';
+					memset(tabString,'\t',thisParent->structure-1);
+					tabString[thisParent->structure-1]='\0';
 			
 					void *temp=returnString;
 					if(thisname)
@@ -1137,7 +1135,7 @@ char *eks_parent_dump_text(EksParent *topLevelEksParent)
 			}
 		
 			//do it for all the sub-children
-			EksParent *firstUnit=topLevelEksParent->firstChild;
+			EksParent *firstUnit=thisParent->firstChild;
 	
 			if(!firstUnit)
 			{
@@ -1160,11 +1158,11 @@ char *eks_parent_dump_text(EksParent *topLevelEksParent)
 			skip_unit: ;
 		}
 	}
-	else if(topLevelEksParent->structure==-1)
+	else if(thisParent->structure==-1)
 	{
-		tabString=malloc(sizeof(char)*(topLevelEksParent->upperEksParent->structure+1));
-		memset(tabString,'\t',topLevelEksParent->upperEksParent->structure);
-		tabString[topLevelEksParent->upperEksParent->structure]='\0';
+		tabString=malloc(sizeof(char)*(thisParent->upperEksParent->structure+1));
+		memset(tabString,'\t',thisParent->upperEksParent->structure);
+		tabString[thisParent->upperEksParent->structure]='\0';
 		
 		void *temp=returnString;
 		returnString=g_strconcat(returnString,tabString,"/*",thisname,"*/\n",NULL);

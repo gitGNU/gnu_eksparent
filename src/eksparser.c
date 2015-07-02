@@ -212,7 +212,7 @@ static EksParent *eks_parse_set_common_and_list(EksParseType *parser)
 
 	printf("AND LIST<%d>[%s]\n",(int)parser->currentParentLevel,str);
 	
-	EksParent *tempParent=eks_parent_add_child_from_type(parser->currentParent,str,EKS_PARENT_TYPE_VALUE);
+	EksParent *tempParent=eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_VALUE,NULL);
 	
 	if(str)
 		free(str);
@@ -237,7 +237,7 @@ static void eks_parse_set_common_nothing(EksParseType *parser)
 		{
 			printf("<%d>[%s]\n",(int)parser->currentParentLevel,str);
 			
-			eks_parent_add_child_from_type(parser->currentParent,str,EKS_PARENT_TYPE_TEXT);
+			eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_VALUE,NULL);
 			
 			free(str);
 		}
@@ -291,7 +291,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				{
 					printf("COMMENT<%ld>[%s]\n",parser->currentParentLevel,str);
 					
-					eks_parent_add_child_from_type(parser->currentParent,str,EKS_PARENT_TYPE_COMMENT);
+					eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_COMMENT,NULL);
 					
 					free(str);
 				}
@@ -318,7 +318,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 					{
 						printf("ML COMMENT<%ld>[%s] %c\n",parser->currentParentLevel,str,c);
 					
-						eks_parent_add_child_from_type(parser->currentParent,str,EKS_PARENT_TYPE_COMMENT);
+						eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_COMMENT,NULL);
 					
 						free(str);
 					}

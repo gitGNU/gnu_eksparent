@@ -47,7 +47,6 @@
 typedef enum EksParentType
 {
 	EKS_PARENT_TYPE_VALUE,
-	EKS_PARENT_TYPE_TEXT,
 	EKS_PARENT_TYPE_VARIABLE,
 	EKS_PARENT_TYPE_COMMENT
 }EksParentType;
@@ -178,16 +177,16 @@ void eks_parent_foreach_child(EksParent *theParent,void *func,void *inparam);
 
 size_t eks_parent_get_child_amount(EksParent *tempEksParent);
 
-int eks_parent_set_string(EksParent *tempEksParent, const char *name,EksParentType ptype);
-int eks_parent_set_int(EksParent *tempEksParent, intptr_t name,EksParentType ptype);
-int eks_parent_set_double(EksParent *tempEksParent, double name,EksParentType ptype);
+int eks_parent_set_string(EksParent *tempEksParent, const char *name);
+int eks_parent_set_int(EksParent *tempEksParent, intptr_t name);
+int eks_parent_set_double(EksParent *tempEksParent, double name);
 
-#define eks_parent_set(parent, name, ptype) _Generic((name),	double: eks_parent_set_double, \
+#define eks_parent_set(parent, name) _Generic((name),	double: eks_parent_set_double, \
 																					float: eks_parent_set_double, \
 																					int: eks_parent_set_int, \
 																					short: eks_parent_set_int, \
 																					intptr_t: eks_parent_set_int, \
-																					default: eks_parent_set_string)(parent, name, ptype)
+																					default: eks_parent_set_string)(parent, name)
 
 void eks_parent_fix_structure(EksParent *parentToFix);
 
@@ -220,9 +219,7 @@ EksParent *eks_parent_get_child_from_type(EksParent *tempEksParent,int pos, EksP
 
 char *eks_parent_get_information_from_type(EksParent *tempEksParent,int pos, EksParentType ptype);
 
-void eks_parent_add_children(EksParent *tempEksParent,int num);
-
-EksParent *eks_parent_add_child_from_type(EksParent *tempParent,char *name, EksParentType ptype);
+EksParent *eks_parent_add_child(EksParent *tempParent,char *name, EksParentType ptype, EksParent *extras);
 
 void eks_parent_destroy(EksParent *tempEksParent,EksBool recursive);
 
