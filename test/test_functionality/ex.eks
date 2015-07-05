@@ -216,7 +216,7 @@ abcde/* kommentering*/fghij
 
 //test with assignments
 
-#var1:hello,noo;#var2:hi;#var3:hoo;
+#var1:hello,noo#var2:hi#var3:hoo
 
 //more advanced
 
@@ -224,9 +224,12 @@ abcde/* kommentering*/fghij
 #var1:aoue #var2{#var:aou2#varin1:#varin2{#varin3{23423}}} #var3{aoeuoeu}
 }
 
-#var:-9223372036854775807;
+#var:-9223372036854775807<
 
 /* This should display: END! */
+>
+test12345
+<
 
 END!
 

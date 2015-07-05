@@ -435,7 +435,6 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				
 				return;
 			}
-			
 			else if(c=='{' && parser->stateIsString==0)
 			{
 				eks_parse_set_common_nothing(parser);
@@ -487,12 +486,20 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 					
 				return;
 			}
-			else if(c==';' && parser->stateIsString==0)
+			else if(c=='<' && parser->stateIsString==0)
 			{
 				eks_parse_set_common_nothing(parser);
 			
 				parser->currentParent=eks_parent_climb_parent(parser->currentParent,1);
 				parser->currentParentLevel--;
+				parser->prevParentLevel=parser->currentParentLevel;
+			}
+			else if(c=='>' && parser->stateIsString==0)
+			{
+				eks_parse_set_common_nothing(parser);
+			
+				parser->currentParent=eks_parent_climb_parent(parser->currentParent,-1);
+				parser->currentParentLevel++;
 				parser->prevParentLevel=parser->currentParentLevel;
 			}
 			else if(c=='/' && parser->stateIsString==0)

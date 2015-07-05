@@ -30,7 +30,7 @@
 /**
 	Fast (int)log(num)/log(10)
 	
-	@num .
+	@param num
 		the value to calculate
 	@return
 		the successful value
@@ -49,9 +49,9 @@ static int log10s(intptr_t num)
 /**
 	Converts int to string
 	
-	@num .
+	@param num
 		The value to convert
-	@return NEW
+	@return
 		returns pointer to the new string
 */
 char *eks_int_to_string(intptr_t num)
@@ -103,6 +103,8 @@ static int eks_get_char_numerical_value(char c)
 }
 
 /**
+	This function will convert a string to an intptr_t or double.
+
 	String to doublefunction.
 	Should be able to convert from these formats:
 	123
@@ -115,10 +117,12 @@ static int eks_get_char_numerical_value(char c)
 	
 	@param str
 		input string to read from, the string requires to be at least size 1 or higher to work.
-	@param out
-		the pointer to the output, in which we will write to
+	@param outd
+		the double-pointer to the output, in which we will write to
+	@param outi
+		the int-pointer to the output, in which we will write to
 	@return
-		0=string, cannot convert, 1=double
+		will return which type it will be outputted as
 */
 EksParentValue eks_string_to_double(const char *str,double *outd,intptr_t *outi)
 {

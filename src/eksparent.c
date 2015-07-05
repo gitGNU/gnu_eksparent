@@ -259,8 +259,6 @@ size_t eks_parent_get_child_amount(EksParent *thisParent)
 		the input parent
 	@param name
 		the input string
-	@param ptype
-		the type of object, eg text or comment
 	@return
 		0=fail,1=successful
 
@@ -300,8 +298,6 @@ int eks_parent_set_string(EksParent *thisParent, const char *name)
 		the input parent
 	@param name
 		the input integer
-	@param ptype
-		the type of object, eg text or comment
 	@return
 		0=fail,1=successful
 
@@ -328,8 +324,6 @@ int eks_parent_set_int(EksParent *thisParent, intptr_t name)
 		the input parent
 	@param name
 		the input double
-	@param ptype
-		the type of object, eg text or comment
 	@return
 		0=fail,1=successful
 
@@ -431,10 +425,8 @@ int eks_parent_from_child_insert_prev(EksParent *child,EksParent *inEksParent)
 	This function will insert afterwards
 	it will fix so that the EksParents structure is correct.
 	
-	@param thisParent
+	@param topParent
 		The EksParent as reference
-	@param childNum
-		the child you want to insert it into
 	@param inEksParent
 		the parent you want to insert
 	@return
@@ -555,21 +547,6 @@ EksParent *eks_parent_clone(EksParent *thisParent)
 }
 
 /**
-	This function will check the EksParentstructure for a child from a pos.
-	
-	@param thisParent NO_FREE
-		The EksParent Structure to check the child from
-	@param pos .
-		the position, 0= first child
-	@return
-		will return 1 if it exists
-*/
-int eks_parent_check_child(EksParent *thisParent,int pos)
-{
-	return (thisParent->firstChild && (thisParent->structure>0 || (thisParent->structure==0 && thisParent->upperEksParent==thisParent)));
-}
-
-/**
 	This function will get the EksParentstructure from a child from a pos.
 	
 	@param thisParent NO_FREE
@@ -674,12 +651,21 @@ EksParent *eks_parent_climb_parent(EksParent *thisParent,int amount)
 		{
 			if(thisParent->firstChild)
 			{
-				thisParent=thisParent->firstChild->prevChild;
+				EksParent *firstUnit=thisParent->firstChild->prevChild;
+				EksParent *loopUnit=firstUnit;
+
+				do
+				{
+					if(loopUnit->structure>=0)
+					{
+						return loopUnit;
+					}
+		
+					loopUnit=loopUnit->prevChild;
+				}while(loopUnit!=firstUnit);
 			}
-			else
-			{
-				eks_parent_add_child(thisParent,NULL,EKS_PARENT_TYPE_VALUE,NULL);
-			}
+			
+			eks_parent_add_child(thisParent,NULL,EKS_PARENT_TYPE_VALUE,NULL);
 		}
 	}
 	else
@@ -844,29 +830,6 @@ EksParent *eks_parent_get_child_from_type(EksParent *thisParent,int pos, EksPare
 }
 
 /**
-	almost the same as eks_parent_get_name, but here you will get from a type such as a comment or value
-	
-	@param thisParent
-		the current-level-parent
-	@param pos
-		The position in the parent object
-	@param ptype
-		The type of the subparent
-	@return
-		the char* to the name of that object
-*/
-char *eks_parent_get_from_type(EksParent *thisParent,int pos, EksParentType ptype)
-{
-	EksParent *tempParent=eks_parent_get_child_from_type(thisParent,pos,ptype);
-	
-	if(tempParent)
-		return eks_parent_get_string(tempParent);
-		
-	eks_error_message("something went wrong!");
-	return NULL;
-}
-
-/**
 	Add a child to an existing eksparent
 	
 	@param thisParent
@@ -875,6 +838,8 @@ char *eks_parent_get_from_type(EksParent *thisParent,int pos, EksParentType ptyp
 		the name of the new child
 	@param ptype
 		the type of the new child
+	@param extras
+		extras to add
 	@return
 		returns the newly created parent or NULL if fail
 */
@@ -989,9 +954,11 @@ void eks_parent_destroy(EksParent *thisParent,EksBool recursive)
 	This can be whatever.
 
 	@param thisParent
-		the parent to insert the content into
-	@param
+		the parent to set the content into
+	@param content
 		content, the content to insert.
+	@param pos
+		the position (like a vector) where you want to set your value
 */
 void eks_parent_custom_set(EksParent *thisParent,void *content,int pos)
 {

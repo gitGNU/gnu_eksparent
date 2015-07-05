@@ -106,7 +106,7 @@ typedef struct EksParent
 	{
 		char *name; ///< The name of the parent.
 		intptr_t iname; ///< The int version
-		double dname; ///the double version
+		double dname; ///< The double version
 	};
 	uint8_t type; ///< the type used above
 	short structure; ///< The significant structure describing what the object 'is', it can be one of these: 1++++ = parent,-1=text,-1=value,-2=comment,0=topmost parent
@@ -133,7 +133,7 @@ typedef struct EksParseType
 	EksParseStates state; ///< Current state of the statemashine
 	EksParseStateComment stateComment; ///< If it is a comment, we are currently looking into 
 	uint8_t stateVector; ///< Saves if it is in vector mode or not, eg \#obj ← vector mode, or \#obj{\#obj{}} ← not vector mode
-	uint8_t stateDelegate; ///< Saves if its in colon mode eg, #vect:aoe\n etc
+	uint8_t stateDelegate; ///< Saves if its in colon mode eg, \#vect:aoe\n etc
 	
 	//the return parent
 	EksParent *parent; ///< The parent structure we will return
@@ -141,7 +141,7 @@ typedef struct EksParseType
 
 	//for handeling the current amount of #s
 	size_t currentParentLevel; ///< Saving the current amount of \# (levels)
-	size_t prevParentLevel; ///< Saving the previous amount of \# (levels, used when changing from ### to #) 
+	size_t prevParentLevel; ///< Saving the previous amount of \# (levels, used when changing from \#\#\# to \#) 
 
 	//for handeling the input of the normal input string
 	char *word; ///< The word, or the string. It will collect in here if it is in a string, like \#something or just a plain word
@@ -169,18 +169,26 @@ typedef struct EksParseType
 
 EksParent *eks_parent_new(const char *name, EksParentType ptype, EksParent *topParent, EksParent *extras);
 
-char *eks_parent_get_string(EksParent *tempEksParent);
-intptr_t eks_parent_get_int(EksParent *tempEksParent);
-double eks_parent_get_double(EksParent *tempEksParent);
+char *eks_parent_get_string(EksParent *thisParent);
+intptr_t eks_parent_get_int(EksParent *thisParent);
+double eks_parent_get_double(EksParent *thisParent);
 
 void eks_parent_foreach_child(EksParent *theParent,void *func,void *inparam);
 
-size_t eks_parent_get_child_amount(EksParent *tempEksParent);
+size_t eks_parent_get_child_amount(EksParent *thisParent);
 
-int eks_parent_set_string(EksParent *tempEksParent, const char *name);
-int eks_parent_set_int(EksParent *tempEksParent, intptr_t name);
-int eks_parent_set_double(EksParent *tempEksParent, double name);
+int eks_parent_set_string(EksParent *thisParent, const char *name);
+int eks_parent_set_int(EksParent *thisParent, intptr_t name);
+int eks_parent_set_double(EksParent *thisParent, double name);
 
+/**
+	This is a generic functon which will just change over depending on the input you give.
+	
+	@param parent
+		the parent you want to set
+	@param name
+		the name you want to set it to, it can be an int or double or char*
+*/
 #define eks_parent_set(parent, name) _Generic((name),	double: eks_parent_set_double, \
 																					float: eks_parent_set_double, \
 																					int: eks_parent_set_int, \
@@ -188,45 +196,38 @@ int eks_parent_set_double(EksParent *tempEksParent, double name);
 																					intptr_t: eks_parent_set_int, \
 																					default: eks_parent_set_string)(parent, name)
 
-void eks_parent_fix_structure(EksParent *parentToFix);
+void eks_parent_fix_structure(EksParent *thisParent);
 
 int eks_parent_from_child_insert_prev(EksParent *child,EksParent *inEksParent);
 
-int eks_parent_insert(EksParent *topParent,EksParent *inEksParent);
+int eks_parent_insert(EksParent *thisParent,EksParent *inEksParent);
 
-EksParent *eks_parent_clone(EksParent *thisEksParent);
+EksParent *eks_parent_clone(EksParent *thisParent);
 
-int eks_parent_check_child(EksParent *tempEksParent,int pos);
+EksParent* eks_parent_get_child(EksParent *thisParent,int pos);
 
-EksParent* eks_parent_get_child(EksParent *tempEksParent,int pos);
+EksParent* eks_parent_get_first_child(EksParent *thisParent);
 
-EksParent* eks_parent_get_first_child(EksParent *tempEksParent);
+EksParent* eks_parent_get_last_child(EksParent *thisParent);
 
-EksParent* eks_parent_get_last_child(EksParent *tempEksParent);
+EksParent *eks_parent_climb_parent(EksParent *thisParent,int amount);
 
-EksParent *eks_parent_climb_parent(EksParent *tempEksParent,int amount);
+EksParent* eks_parent_get_child_from_name(EksParent *thisParent,const char *tempName);
 
-EksParent* eks_parent_get_child_from_name(EksParent *tempEksParent,const char *tempName);
+int eks_parent_compare_type(EksParent *thisParent, EksParentType ptype);
 
-/** if you only want to check if a child exists*/
-#define eks_parent_check_child_from_name(par,name) eks_parent_get_child_from_name(par,name)
+int eks_parent_get_amount_from_type(EksParent *thisParent, EksParentType ptype);
 
-int eks_parent_compare_type(EksParent *tempEksParent, EksParentType ptype);
+EksParent *eks_parent_get_child_from_type(EksParent *thisParent,int pos, EksParentType ptype);
 
-int eks_parent_get_amount_from_type(EksParent *tempEksParent, EksParentType ptype);
+EksParent *eks_parent_add_child(EksParent *thisParent,char *name, EksParentType ptype, EksParent *extras);
 
-EksParent *eks_parent_get_child_from_type(EksParent *tempEksParent,int pos, EksParentType ptype);
+void eks_parent_destroy(EksParent *thisParent,EksBool recursive);
 
-char *eks_parent_get_information_from_type(EksParent *tempEksParent,int pos, EksParentType ptype);
+void eks_parent_custom_set(EksParent *thisParent,void *content,int pos);
+void *eks_parent_custom_get(EksParent *thisParent,int pos);
 
-EksParent *eks_parent_add_child(EksParent *tempParent,char *name, EksParentType ptype, EksParent *extras);
-
-void eks_parent_destroy(EksParent *tempEksParent,EksBool recursive);
-
-void eks_parent_custom_set(EksParent *tempEksParent,void *content,int pos);
-void *eks_parent_custom_get(EksParent *tempEksParent,int pos);
-
-char *eks_parent_dump_text(EksParent *topLevelEksParent);
+char *eks_parent_dump_text(EksParent *thisParent);
 
 /*****FOR PARSING*****/
 
