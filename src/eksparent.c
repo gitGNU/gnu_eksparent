@@ -58,15 +58,15 @@ static void eks_parent_set_base(EksParent *thisParent, EksParentType ptype)
 		thisParent->structure=-10;
 	}
 	
+	thisParent->rt=0;
+	thisParent->span=0;
 	thisParent->custom=NULL;
 	thisParent->firstChild=NULL;
 }
 
 /**
-	create a new parent
+	create a new parent, static function
 	
-	@param name
-		the name to use
 	@param ptype
 		the type to use
 	@param topParent
@@ -76,7 +76,7 @@ static void eks_parent_set_base(EksParent *thisParent, EksParentType ptype)
 	@return
 		returns the new eksparent
 */
-EksParent *eks_parent_new(const char *name, EksParentType ptype, EksParent *topParent, EksParent *extras)
+static EksParent *eks_parent_new_base(EksParentType ptype, EksParent *topParent, EksParent *extras)
 {
 	EksParent *thisParent=malloc(sizeof(EksParent));
 	if(thisParent==NULL)
@@ -93,12 +93,75 @@ EksParent *eks_parent_new(const char *name, EksParentType ptype, EksParent *topP
 	thisParent->firstExtras=extras;
 	
 	eks_parent_set_base(thisParent,ptype);
-	eks_parent_set_string(thisParent,name);
+	//eks_parent_set_string(thisParent,name);
 	
 	thisParent->nextChild=thisParent;
 	thisParent->prevChild=thisParent;
 	
 	return thisParent;
+}
+
+/**
+	create a new parent with a string as its name
+	
+	@param name
+		the name to use
+	@param ptype
+		the type to use
+	@param topParent
+		the toplevel parent to use
+	@param extras
+		the extras to use
+	@return
+		returns the new eksparent
+*/
+EksParent *eks_parent_new_string(const char *name, EksParentType ptype, EksParent *topParent, EksParent *extras)
+{
+	EksParent *retParent=eks_parent_new_base(ptype, topParent, extras);
+	eks_parent_set_string(retParent,name);
+	return retParent;
+}
+
+/**
+	create a new parent with an int as its name
+	
+	@param iname
+		the name to use
+	@param ptype
+		the type to use
+	@param topParent
+		the toplevel parent to use
+	@param extras
+		the extras to use
+	@return
+		returns the new eksparent
+*/
+EksParent *eks_parent_new_int(intptr_t iname, EksParentType ptype, EksParent *topParent, EksParent *extras)
+{
+	EksParent *retParent=eks_parent_new_base(ptype, topParent, extras);
+	eks_parent_set_int(retParent,iname);
+	return retParent;
+}
+
+/**
+	create a new parent with a double as its name
+	
+	@param dname
+		the name to use
+	@param ptype
+		the type to use
+	@param topParent
+		the toplevel parent to use
+	@param extras
+		the extras to use
+	@return
+		returns the new eksparent
+*/
+EksParent *eks_parent_new_double(double dname, EksParentType ptype, EksParent *topParent, EksParent *extras)
+{
+	EksParent *retParent=eks_parent_new_base(ptype, topParent, extras);
+	eks_parent_set_double(retParent,dname);
+	return retParent;
 }
 
 /**
@@ -830,12 +893,10 @@ EksParent *eks_parent_get_child_from_type(EksParent *thisParent,int pos, EksPare
 }
 
 /**
-	Add a child to an existing eksparent
+	Add a child to an existing eksparent, static function
 	
 	@param thisParent
 		the parent to add some children into
-	@param name
-		the name of the new child
 	@param ptype
 		the type of the new child
 	@param extras
@@ -843,7 +904,7 @@ EksParent *eks_parent_get_child_from_type(EksParent *thisParent,int pos, EksPare
 	@return
 		returns the newly created parent or NULL if fail
 */
-EksParent *eks_parent_add_child(EksParent *thisParent,char *name, EksParentType ptype, EksParent *extras)
+static EksParent *eks_parent_add_child_base(EksParent *thisParent, EksParentType ptype, EksParent *extras)
 {
 	EksParent *newParent;
 
@@ -853,7 +914,7 @@ EksParent *eks_parent_add_child(EksParent *thisParent,char *name, EksParentType 
 	
 		if(!firstParent)
 		{
-			newParent=eks_parent_new(name,ptype,thisParent,extras);
+			newParent=eks_parent_new_base(ptype,thisParent,extras);
 			thisParent->firstChild=newParent;
 			return newParent;
 		}
@@ -866,7 +927,6 @@ EksParent *eks_parent_add_child(EksParent *thisParent,char *name, EksParentType 
 			newParent->firstExtras=extras;
 		
 			eks_parent_set_base(newParent,ptype);
-			eks_parent_set_string(newParent,name);
 
 			newParent->prevChild=firstParent->prevChild;
 			newParent->nextChild=firstParent;
@@ -881,6 +941,69 @@ EksParent *eks_parent_add_child(EksParent *thisParent,char *name, EksParentType 
 		eks_error_message("You need to initiate the parent first!");
 		return NULL;
 	}
+}
+
+/**
+	Add a child to an existing eksparent, using a string as its name
+	
+	@param thisParent
+		the parent to add some children into
+	@param name
+		the name of the new child
+	@param ptype
+		the type of the new child
+	@param extras
+		extras to add
+	@return
+		returns the newly created parent or NULL if fail
+*/
+EksParent *eks_parent_add_child_string(EksParent *thisParent, const char *name, EksParentType ptype, EksParent *extras)
+{
+	EksParent *retParent=eks_parent_add_child_base(thisParent,ptype,extras);
+	eks_parent_set_string(retParent,name);
+	return retParent;
+}
+
+/**
+	Add a child to an existing eksparent, using an int as its name
+	
+	@param thisParent
+		the parent to add some children into
+	@param iname
+		the name of the new child
+	@param ptype
+		the type of the new child
+	@param extras
+		extras to add
+	@return
+		returns the newly created parent or NULL if fail
+*/
+EksParent *eks_parent_add_child_int(EksParent *thisParent, intptr_t iname, EksParentType ptype, EksParent *extras)
+{
+	EksParent *retParent=eks_parent_add_child_base(thisParent,ptype,extras);
+	eks_parent_set_int(retParent,iname);
+	return retParent;
+}
+
+/**
+	Add a child to an existing eksparent, using a double as its name
+	
+	@param thisParent
+		the parent to add some children into
+	@param dname
+		the name of the new child
+	@param ptype
+		the type of the new child
+	@param extras
+		extras to add
+	@return
+		returns the newly created parent or NULL if fail
+*/
+EksParent *eks_parent_add_child_double(EksParent *thisParent, double dname, EksParentType ptype, EksParent *extras)
+{
+	EksParent *retParent=eks_parent_add_child_base(thisParent,ptype,extras);
+	eks_parent_set_double(retParent,dname);
+	return retParent;
 }
 
 /**
@@ -977,11 +1100,10 @@ void eks_parent_custom_set(EksParent *thisParent,void *content,int pos)
 	
 	if(pos<0)
 	{
-		len++;
-		vector=realloc(vector,sizeof(void*)*(len+1));
+		vector=realloc(vector,sizeof(void*)*(len+2));
 		
-		vector[len-1]=content;
-		vector[len]=NULL;
+		vector[len]=content;
+		vector[len+1]=NULL;
 	}
 	else
 	{
@@ -1018,9 +1140,9 @@ void *eks_parent_custom_get(EksParent *thisParent,int pos)
 		vector++;
 	}
 	
-	if(pos>len)
+	if((pos+1)>len)
 	{
-		eks_error_message("Your position is too high! len: %d, pos: %d",len,pos);
+		eks_error_message("That custom value is not initialized! len: %d, pos: %d",len,pos);
 		return NULL;
 	}
 	

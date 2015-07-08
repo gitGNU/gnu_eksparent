@@ -38,10 +38,10 @@ int main(void)
 	
 	//test custom content
 	
-	EksParent *test=eks_parent_new("test", EKS_PARENT_TYPE_TEXT, NULL, NULL);
+	EksParent *test=eks_parent_new("test", EKS_PARENT_TYPE_VALUE, NULL, NULL);
 	
-	eks_parent_custom_set(test,(void*)"hello there!",-1);
-	eks_parent_custom_set(test,(void*)(intptr_t)123,-1);
+	eks_parent_custom_set(test,(void*)"hello there!",0);
+	eks_parent_custom_set(test,(void*)(intptr_t)123,1);
 
 	//printf("pos1 = %ld, pos2 = %ld\n",pos1,pos2);
 	

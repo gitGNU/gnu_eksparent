@@ -213,6 +213,8 @@ static EksParent *eks_parse_set_common_and_list(EksParseType *parser)
 	printf("AND LIST<%d>[%s]\n",(int)parser->currentParentLevel,str);
 	
 	EksParent *tempParent=eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_VALUE,NULL);
+	tempParent->rt=EKS_PARENT_IS_TAGVALUE;
+	tempParent->rt=EKS_PARENT_IS_NOSPAN;
 	
 	if(str)
 		free(str);
@@ -237,7 +239,8 @@ static void eks_parse_set_common_nothing(EksParseType *parser)
 		{
 			printf("<%d>[%s]\n",(int)parser->currentParentLevel,str);
 			
-			eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_VALUE,NULL);
+			EksParent *tempParent=eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_VALUE,NULL);
+			tempParent->rt=EKS_PARENT_IS_UNTAGGED;
 			
 			free(str);
 		}
@@ -291,7 +294,8 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				{
 					printf("COMMENT<%ld>[%s]\n",parser->currentParentLevel,str);
 					
-					eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_COMMENT,NULL);
+					EksParent *theChild=eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_COMMENT,NULL);
+					theChild->rt=EKS_PARENT_IS_NOSPAN;
 					
 					free(str);
 				}
@@ -318,8 +322,9 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 					{
 						printf("ML COMMENT<%ld>[%s] %c\n",parser->currentParentLevel,str,c);
 					
-						eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_COMMENT,NULL);
-					
+						EksParent *theChild=eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_COMMENT,NULL);
+						theChild->rt=EKS_PARENT_IS_SPAN;
+						
 						free(str);
 					}
 					parser->currentCommentWordSize=0;
@@ -457,6 +462,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				parser->ladder[parser->ladderCurrentAmount-1]=parser->currentParentLevel;
 				
 				parser->currentParent=eks_parse_set_common_and_list(parser);
+				parser->currentParent->span=EKS_PARENT_IS_SPAN;
 				
 				//relative itself
 				parser->currentParentLevel=0;

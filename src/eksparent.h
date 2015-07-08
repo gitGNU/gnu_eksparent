@@ -41,6 +41,18 @@
 /** Display a debug message with nice looking colors */
 #define eks_debug_message(msg, ...) printf("\e[0m\e[1m" __FILE__ ":%d: \e[1;36mDEBUG\e[0m\e[1m: (%s)\n\e[32m→\e[0m\e[1m " msg "\e[0m\n\n",__LINE__,__func__, ##__VA_ARGS__)
 
+/** Used with rt */
+/** if its a \# value. */
+#define EKS_PARENT_IS_TAGVALUE 0
+/** if its not a \# value. */
+#define EKS_PARENT_IS_UNTAGGED 1
+
+/** Used with span */
+/** if its not a multiline comment, or just inside {} */
+#define EKS_PARENT_IS_NOSPAN 0
+/** if its a multiline comment, or just inside {} */
+#define EKS_PARENT_IS_SPAN 1
+
 /**
 	different types of subobjects
 */
@@ -59,6 +71,47 @@ typedef enum EksBool
 	EKS_FALSE=0,
 	EKS_TRUE=1
 }EksBool;
+
+/**
+	Type, this can be or:ed
+*/
+typedef enum EksParentValue
+{
+	EKS_PARENT_VALUE_STRING,
+	EKS_PARENT_VALUE_INT,
+	EKS_PARENT_VALUE_DOUBLE
+}EksParentValue;
+
+/**
+	the most important object/structure in this library.
+	Handles kinda everything
+*/
+typedef struct EksParent
+{
+	union
+	{
+		char *name; ///< The name of the parent.
+		intptr_t iname; ///< The int version
+		double dname; ///< The double version
+	};
+	unsigned int type : 4; ///< the type used above
+	unsigned int rt : 1; ///< rt= if 'value' then its says if its # or not.
+	unsigned int span : 1; ///< span= if 'value' then its says if its {} or not, if 'comment' then it says if its // or /**/
+	signed int structure : 16; ///< The significant structure describing what the object 'is', it can be one of these: 1++++ = parent,-1=text,-1=value,-2=comment,0=topmost parent
+	unsigned int : 0; //< fill it up
+	
+	void *custom; ///< for custom usage for an application, This is a vector with NULL termination
+	
+	struct EksParent *firstExtras; ///< in development, not used at the moment
+	
+	struct EksParent *upperEksParent; ///< The eks-parent above this object, NULL if nothing.
+
+	struct EksParent *firstChild; ///< The first child below this object.
+	
+	struct EksParent *nextChild; ///< The next object in this linked list.
+	struct EksParent *prevChild; ///< The previous object in this linked list.
+	
+}EksParent;
 
 /**
 	States for the eksparentparser state mashine
@@ -85,44 +138,6 @@ typedef enum EksParseStateComment
 	EKS_PARENT_STATE_COMMENT_MULTILINE_END_CHECK,
 	EKS_PARENT_STATE_COMMENT_MULTILINE_NESTLE_CHECK
 }EksParseStateComment;
-
-/**
-	Type, this can be or:ed
-*/
-typedef enum EksParentValue
-{
-	EKS_PARENT_VALUE_STRING,
-	EKS_PARENT_VALUE_INT,
-	EKS_PARENT_VALUE_DOUBLE
-}EksParentValue;
-
-/**
-	the most important object/structure in this library.
-	Handles kinda everything
-*/
-typedef struct EksParent
-{
-	union
-	{
-		char *name; ///< The name of the parent.
-		intptr_t iname; ///< The int version
-		double dname; ///< The double version
-	};
-	uint8_t type; ///< the type used above
-	short structure; ///< The significant structure describing what the object 'is', it can be one of these: 1++++ = parent,-1=text,-1=value,-2=comment,0=topmost parent
-	
-	void *custom; ///< for custom usage for an application, This is a vector with NULL termination
-	
-	struct EksParent *firstExtras; ///< in development, not used at the moment
-	
-	struct EksParent *upperEksParent; ///< The eks-parent above this object, NULL if nothing.
-
-	struct EksParent *firstChild; ///< The first child below this object.
-	
-	struct EksParent *nextChild; ///< The next object in this linked list.
-	struct EksParent *prevChild; ///< The previous object in this linked list.
-	
-}EksParent;
 
 /**
 	The main structure for the parsing.
@@ -167,7 +182,29 @@ typedef struct EksParseType
 
 /***********FUNCTIONS START HERE!******/
 
-EksParent *eks_parent_new(const char *name, EksParentType ptype, EksParent *topParent, EksParent *extras);
+EksParent *eks_parent_new_string(const char *name, EksParentType ptype, EksParent *topParent, EksParent *extras);
+EksParent *eks_parent_new_int(intptr_t iname, EksParentType ptype, EksParent *topParent, EksParent *extras);
+EksParent *eks_parent_new_double(double dname, EksParentType ptype, EksParent *topParent, EksParent *extras);
+
+/**
+	Create a new parent with a name
+	This is a generic functon which will just change over depending on the input you give.
+	
+	@param name
+		the name you want to set it to, it can be an int or double or char*
+	@param ptype
+		the type to use eg value or comment
+	@param topParent
+		the parent to have as its upper parent
+	@param extras
+		A parent containing extras information
+*/
+#define eks_parent_new(name, ptype, topParent, extras) _Generic((name),	double: eks_parent_new_double, \
+																					float: eks_parent_new_double, \
+																					short: eks_parent_new_int, \
+																					int: eks_parent_new_int, \
+																					intptr_t: eks_parent_new_int, \
+																					default: eks_parent_new_string)(name, ptype, topParent, extras)
 
 char *eks_parent_get_string(EksParent *thisParent);
 intptr_t eks_parent_get_int(EksParent *thisParent);
@@ -182,6 +219,7 @@ int eks_parent_set_int(EksParent *thisParent, intptr_t name);
 int eks_parent_set_double(EksParent *thisParent, double name);
 
 /**
+	Set the name of a parent
 	This is a generic functon which will just change over depending on the input you give.
 	
 	@param parent
@@ -191,10 +229,34 @@ int eks_parent_set_double(EksParent *thisParent, double name);
 */
 #define eks_parent_set(parent, name) _Generic((name),	double: eks_parent_set_double, \
 																					float: eks_parent_set_double, \
-																					int: eks_parent_set_int, \
 																					short: eks_parent_set_int, \
+																					int: eks_parent_set_int, \
 																					intptr_t: eks_parent_set_int, \
 																					default: eks_parent_set_string)(parent, name)
+
+EksParent *eks_parent_add_child_string(EksParent *thisParent,const char *name, EksParentType ptype, EksParent *extras);
+EksParent *eks_parent_add_child_int(EksParent *thisParent,intptr_t iname, EksParentType ptype, EksParent *extras);
+EksParent *eks_parent_add_child_double(EksParent *thisParent,double dname, EksParentType ptype, EksParent *extras);
+
+/**
+	Add a child to a parent with a name
+	This is a generic functon which will just change over depending on the input you give.
+	
+	@param parent
+		the parent you want to set
+	@param name
+		the name you want to set it to, it can be an int or double or char*
+	@param type
+		the type to use eg value or comment
+	@param extras
+		A parent containing extras information
+*/
+#define eks_parent_add_child(parent, name, type, extras) _Generic((name),	double: eks_parent_add_child_double, \
+																					float: eks_parent_add_child_double, \
+																					short: eks_parent_add_child_int, \
+																					int: eks_parent_add_child_int, \
+																					intptr_t: eks_parent_add_child_int, \
+																					default: eks_parent_add_child_string)(parent, name, type, extras)
 
 void eks_parent_fix_structure(EksParent *thisParent);
 
@@ -219,8 +281,6 @@ int eks_parent_compare_type(EksParent *thisParent, EksParentType ptype);
 int eks_parent_get_amount_from_type(EksParent *thisParent, EksParentType ptype);
 
 EksParent *eks_parent_get_child_from_type(EksParent *thisParent,int pos, EksParentType ptype);
-
-EksParent *eks_parent_add_child(EksParent *thisParent,char *name, EksParentType ptype, EksParent *extras);
 
 void eks_parent_destroy(EksParent *thisParent,EksBool recursive);
 
