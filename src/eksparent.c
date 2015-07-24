@@ -65,7 +65,7 @@ static void eks_parent_set_base(EksParent *thisParent, EksParentType ptype)
 }
 
 /**
-	create a new parent, static function
+	create a new parent, function
 	
 	@param ptype
 		the type to use
@@ -76,7 +76,7 @@ static void eks_parent_set_base(EksParent *thisParent, EksParentType ptype)
 	@return
 		returns the new eksparent
 */
-static EksParent *eks_parent_new_base(EksParentType ptype, EksParent *topParent, EksParent *extras)
+EksParent *eks_parent_new_base(EksParentType ptype, EksParent *topParent, EksParent *extras)
 {
 	EksParent *thisParent=malloc(sizeof(EksParent));
 	if(thisParent==NULL)
@@ -190,6 +190,7 @@ char *eks_parent_get_string(EksParent *thisParent)
 		}
 		
 		eks_error_message("Unknown type/value!");
+		return NULL;
 	}
 	
 	eks_error_message("The parent was NULL!");
@@ -260,25 +261,11 @@ void eks_parent_foreach_child(EksParent *thisParent,void *func,void *inparam)
 	
 	typefunction=func;
 
-	EksParent *firstUnit=thisParent->firstChild;
-	
-	if(!firstUnit)
-	{
-		eks_error_message("No first child?");
-		return;
-	}
-	
-	EksParent *loopUnit=firstUnit;
-	EksParent *sloopUnit;
-
-	do
-	{
-		sloopUnit=loopUnit->nextChild;
-		
+	eks_parent_foreach_child_start(thisParent,loopUnit)
+	{	
 		typefunction(loopUnit,inparam);
-		
-		loopUnit=sloopUnit;
-	}while(loopUnit!=firstUnit);
+
+	}eks_parent_foreach_child_end(thisParent,loopUnit);
 	
 	return;
 }
@@ -299,7 +286,7 @@ size_t eks_parent_get_child_amount(EksParent *thisParent)
 	
 	if(!firstUnit)
 	{
-		eks_error_message("No first child?");
+		eks_error_message("No first child? Parent %p",thisParent);
 		return 0;
 	}
 	
@@ -350,7 +337,7 @@ int eks_parent_set_string(EksParent *thisParent, const char *name)
 		return 1;
 	}
 	
-	eks_error_message("Could not set string!");
+	eks_error_message("Could not set string! Parent %p, Name %s",thisParent,name);
 	return 0;
 }
 
@@ -376,7 +363,7 @@ int eks_parent_set_int(EksParent *thisParent, intptr_t name)
 		return 1;
 	}
 	
-	eks_error_message("Could not set string!");
+	eks_error_message("Could not set int! Parent %p, Name %ld",thisParent,(long)name);
 	return 0;
 }
 
@@ -402,7 +389,7 @@ int eks_parent_set_double(EksParent *thisParent, double name)
 		return 1;
 	}
 	
-	eks_error_message("Could not set string!");
+	eks_error_message("Could not set double! Parent %p, Name %f",thisParent,name);
 	return 0;
 }
 
@@ -622,11 +609,17 @@ EksParent *eks_parent_clone(EksParent *thisParent)
 
 EksParent* eks_parent_get_child(EksParent *thisParent,int pos)
 {
+	if(!thisParent)
+	{
+		eks_error_message("Got NULL as input!");
+		return NULL;
+	}
+
 	EksParent *firstUnit=thisParent->firstChild;
 	
 	if(!firstUnit)
 	{
-		eks_error_message("No first child?");
+		eks_error_message("No first child? Parent %p Pos %d",thisParent,pos);
 		return NULL;
 	}
 		
@@ -644,7 +637,7 @@ EksParent* eks_parent_get_child(EksParent *thisParent,int pos)
 		loopUnit=loopUnit->nextChild;
 	}while(loopUnit!=firstUnit);
 	
-	eks_error_message("Your position is probably wrong! Pos[%d] in-EksParent name[%s]",pos,thisParent->name);
+	eks_error_message("Your position is probably wrong! Parent %p Pos %d",thisParent,pos);
 	
 	return NULL;
 }
@@ -665,7 +658,7 @@ EksParent* eks_parent_get_first_child(EksParent *thisParent)
 		return thisParent->firstChild;
 	}
 	
-	eks_error_message("Failed to get child!");// There is [%d] children!",thisParent->amount);
+	eks_error_message("Parent is NULL!");// There is [%d] children!",thisParent->amount);
 	return NULL;
 }
 
@@ -685,7 +678,7 @@ EksParent* eks_parent_get_last_child(EksParent *thisParent)
 		return thisParent->firstChild->prevChild;
 	}
 	
-	eks_error_message("Failed to get child!");// There is [%d] children!",thisParent->amount);
+	eks_error_message("Parent or the first child is NULL!");// There is [%d] children!",thisParent->amount);
 	return NULL;
 }
 
@@ -767,9 +760,15 @@ EksParent *eks_parent_climb_parent(EksParent *thisParent,int amount)
 */
 EksParent* eks_parent_get_child_from_name(EksParent *thisParent,const char *tempName)
 {
+	if(!thisParent)
+	{
+		eks_error_message("Got NULL as input!");
+		return NULL;
+	}
+
 	if(!thisParent->firstChild)
 	{
-		eks_error_message("No first child?");
+		eks_error_message("No first child? Parent %p, Name-to-find %s",thisParent,tempName);
 		return NULL;
 	}
 	
@@ -904,7 +903,7 @@ EksParent *eks_parent_get_child_from_type(EksParent *thisParent,int pos, EksPare
 	@return
 		returns the newly created parent or NULL if fail
 */
-static EksParent *eks_parent_add_child_base(EksParent *thisParent, EksParentType ptype, EksParent *extras)
+EksParent *eks_parent_add_child_base(EksParent *thisParent, EksParentType ptype, EksParent *extras)
 {
 	EksParent *newParent;
 

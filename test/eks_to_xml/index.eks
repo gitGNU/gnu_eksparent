@@ -36,7 +36,7 @@
 		
 		#h2{A new header}
 		
-		#p{More text ...}
+		#p{More text ... #br:< even more text}
 		
 		#p{0xFF}
 		

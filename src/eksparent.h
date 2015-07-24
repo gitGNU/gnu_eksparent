@@ -98,6 +98,7 @@ typedef struct EksParent
 	unsigned int rt : 1; ///< rt= if 'value' then its says if its # or not.
 	unsigned int span : 1; ///< span= if 'value' then its says if its {} or not, if 'comment' then it says if its // or /**/
 	signed int structure : 16; ///< The significant structure describing what the object 'is', it can be one of these: 1++++ = parent,-1=text,-1=value,-2=comment,0=topmost parent
+	unsigned int camount : 8; //< Amount of customs
 	unsigned int : 0; //< fill it up
 	
 	void *custom; ///< for custom usage for an application, This is a vector with NULL termination
@@ -182,6 +183,7 @@ typedef struct EksParseType
 
 /***********FUNCTIONS START HERE!******/
 
+EksParent *eks_parent_new_base(EksParentType ptype, EksParent *topParent, EksParent *extras);
 EksParent *eks_parent_new_string(const char *name, EksParentType ptype, EksParent *topParent, EksParent *extras);
 EksParent *eks_parent_new_int(intptr_t iname, EksParentType ptype, EksParent *topParent, EksParent *extras);
 EksParent *eks_parent_new_double(double dname, EksParentType ptype, EksParent *topParent, EksParent *extras);
@@ -212,6 +214,43 @@ double eks_parent_get_double(EksParent *thisParent);
 
 void eks_parent_foreach_child(EksParent *theParent,void *func,void *inparam);
 
+/**
+	The main foreach loop function in eksparent. (remember to close with: eks_parent_foreach_child_end)
+	Also the parameters should be the same for eks_parent_foreach_child_start and eks_parent_foreach_child_end
+	
+	@param thisParent 
+		this parent object is the parameter for the parent you want to run the foreach function for.
+	@param loopUnit
+		This is the parameter you should use as the return value for each loop.
+*/
+#define eks_parent_foreach_child_start(thisParent,loopUnit) do{ \
+	if(!thisParent){ \
+		eks_error_message("thisParent (from eks_parent_foreach_child_start) is NULL!"); \
+		break; \
+	} \
+	EksParent *thisParent ## loopUnit ## _eks_firstUnit=thisParent->firstChild; \
+	if(!thisParent ## loopUnit ## _eks_firstUnit){ \
+		eks_error_message("No first child? Parent %p",thisParent); \
+		break; \
+	} \
+	EksParent *loopUnit=thisParent ## loopUnit ## _eks_firstUnit; \
+	EksParent *thisParent ## loopUnit ## _eks_sloopUnit; \
+	do{ \
+		thisParent ## loopUnit ## _eks_sloopUnit=loopUnit->nextChild;
+
+/**
+	The closing function to the foreach loop in eksparent. (remember to open with: eks_parent_foreach_child_start).
+	Also the parameters should be the same for eks_parent_foreach_child_start and eks_parent_foreach_child_end
+	
+	@param thisParent 
+		this parent object is the parameter for the parent you want to run the foreach function for.
+	@param loopUnit
+		This is the parameter you should use as the return value for each loop.
+*/
+#define eks_parent_foreach_child_end(thisParent,loopUnit) loopUnit=thisParent ## loopUnit ## _eks_sloopUnit; \
+	}while(loopUnit!=thisParent ## loopUnit ## _eks_firstUnit); \
+	}while(0)
+
 size_t eks_parent_get_child_amount(EksParent *thisParent);
 
 int eks_parent_set_string(EksParent *thisParent, const char *name);
@@ -234,6 +273,7 @@ int eks_parent_set_double(EksParent *thisParent, double name);
 																					intptr_t: eks_parent_set_int, \
 																					default: eks_parent_set_string)(parent, name)
 
+EksParent *eks_parent_add_child_base(EksParent *thisParent, EksParentType ptype, EksParent *extras);
 EksParent *eks_parent_add_child_string(EksParent *thisParent,const char *name, EksParentType ptype, EksParent *extras);
 EksParent *eks_parent_add_child_int(EksParent *thisParent,intptr_t iname, EksParentType ptype, EksParent *extras);
 EksParent *eks_parent_add_child_double(EksParent *thisParent,double dname, EksParentType ptype, EksParent *extras);
