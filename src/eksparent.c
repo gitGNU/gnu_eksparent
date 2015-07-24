@@ -714,14 +714,17 @@ EksParent *eks_parent_climb_parent(EksParent *thisParent,int amount)
 				{
 					if(loopUnit->structure>=0)
 					{
-						return loopUnit;
+						thisParent=loopUnit;
+						goto next_add;
 					}
 		
 					loopUnit=loopUnit->prevChild;
 				}while(loopUnit!=firstUnit);
 			}
 			
-			eks_parent_add_child(thisParent,NULL,EKS_PARENT_TYPE_VALUE,NULL);
+			thisParent=eks_parent_add_child(thisParent,NULL,EKS_PARENT_TYPE_VALUE,NULL);
+			
+			next_add: ;
 		}
 	}
 	else
@@ -1146,122 +1149,6 @@ void *eks_parent_custom_get(EksParent *thisParent,int pos)
 	}
 	
 	return ((void**)(thisParent->custom))[pos];
-}
-
-/**
-	Will dump the contents of a parent structure.
-	
-	@param thisParent NO_FREE
-		The parent to dump the information from
-	@return NEW
-		The output text
-*/
-char *eks_parent_dump_text(EksParent *thisParent)
-{
-	//FIX FIX FIX (works now but not as i want)
-	char *returnString=calloc(1,sizeof(char));
-	char *StructureString=NULL;
-	
-	char *tabString=NULL;
-	
-	char *thisname=eks_parent_get_string(thisParent);
-	
-	if(thisParent->structure>=0)
-	{
-		if(thisParent->firstChild==NULL)
-		{
-			tabString=malloc(sizeof(char)*(thisParent->upperEksParent->structure+1));
-			memset(tabString,'\t',thisParent->upperEksParent->structure);
-			tabString[thisParent->upperEksParent->structure]='\0';
-		
-			void *temp=returnString;
-			returnString=g_strconcat(returnString,tabString,thisname,"\n",NULL);
-			free(temp);
-		}
-		else
-		{
-			//add the hashtag signs, for the structure level.
-			if(thisParent->structure>0)
-			{
-				//if the word does not contain \n or ' '
-				//if(thisname)
-				//{
-					if((StructureString=malloc(sizeof(char)*(thisParent->structure+1)))==NULL)
-					{
-						eks_error_message("Failed to allocate space for the returning string!");
-						return NULL;
-					}
-		
-					memset(StructureString,'#',thisParent->structure);
-					StructureString[thisParent->structure]='\0';
-			
-					if((tabString=malloc(sizeof(char)*(thisParent->structure)))==NULL)
-					{
-						eks_error_message("Failed to allocate space for the tabs!");
-						return NULL;
-					}
-					memset(tabString,'\t',thisParent->structure-1);
-					tabString[thisParent->structure-1]='\0';
-			
-					void *temp=returnString;
-					if(thisname)
-						returnString=g_strconcat(returnString,tabString,StructureString,thisname,"\n",NULL);
-					else
-						returnString=g_strconcat(returnString,tabString,StructureString,"\n",NULL);
-					free(temp);
-				//else
-				//{
-				//	returnString=g_strconcat(returnString,"#",thisname,"{\n",NULL);
-				//}
-			}
-			else
-			{
-				//if it is a comment (should be improved, this will also include the variables!)
-				void *temp=returnString;
-				returnString=g_strconcat(returnString,"//",thisname,"\n",NULL);
-				free(temp);
-			}
-		
-			//do it for all the sub-children
-			EksParent *firstUnit=thisParent->firstChild;
-	
-			if(!firstUnit)
-			{
-				goto skip_unit;
-			}
-		
-			EksParent *loopUnit=firstUnit;
-
-			do
-			{
-				char *temp=eks_parent_dump_text(loopUnit);
-				void *temp2=returnString;
-				returnString=g_strconcat(returnString,temp,NULL);
-				free(temp2);
-				free(temp);
-			
-				loopUnit=loopUnit->nextChild;
-			}while(loopUnit!=firstUnit);
-		
-			skip_unit: ;
-		}
-	}
-	else if(thisParent->structure==-1)
-	{
-		tabString=malloc(sizeof(char)*(thisParent->upperEksParent->structure+1));
-		memset(tabString,'\t',thisParent->upperEksParent->structure);
-		tabString[thisParent->upperEksParent->structure]='\0';
-		
-		void *temp=returnString;
-		returnString=g_strconcat(returnString,tabString,"/*",thisname,"*/\n",NULL);
-		free(temp);
-	}
-	
-	free(StructureString);
-	free(tabString);
-	free(thisname);
-	
-	return returnString;
 }
 
 #ifndef CC_COMPILING_EKS

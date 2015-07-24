@@ -87,7 +87,7 @@ blah blah
 				val3
 		värde4 //test with comment in end
 		##ett värde med kommentering... //kommentering
-		@# //avsluta listan, fortsätt med texten
+		@! //avsluta listan, fortsätt med texten
 		detta kommer vid sidan om
 		mer test
 	}
@@ -143,7 +143,7 @@ blah blah
 		
 		//this value should not do anything
 		
-		@#
+		@!
 		
 		ordinary 
 		text text
@@ -162,7 +162,7 @@ blah blah
 					aoeaoe
 			}
 	}
-@#
+@!
 
 blebb text
 blebb text
@@ -178,7 +178,7 @@ blebb text
 						#kaka
 						#kokaärenbaka
 			
-						@#
+						@!
 			
 						aoueoeu
 			
@@ -194,16 +194,24 @@ blebb text
 			}
 		#aoe
 		##aoe
-		@#
+		@!
 		#oeui{
 		oeu
 		oeui
 			#1234
 			##12345
-		@#
+		@!
 		aouoeu
 		
 		}
+		
+		//dumptest
+		aoe
+		#abc
+		aeu
+		##abc
+		aoe
+		#abc
 	}
 	
 	#tillbakatest2
@@ -224,14 +232,16 @@ abcde/* kommentering*/fghij
 #var1:aoue #var2{#var:aou2#varin1:#varin2{#varin3{23423}}} #var3{aoeuoeu}
 }
 
-#var:-9223372036854775807<
+#var:-9223372036854775807@abc aeo@<
 
 /* This should display: END! */
->
-test12345
-<
+@>?abc
+	test12345
+	aoe
+@<
+@###
+oeu
 
 END!
-
 #blebb
 

@@ -172,8 +172,9 @@ typedef struct EksParseType
 	int commentNestleSize; ///< for calculating where in the nestling process we are
 
 	//special string cases
-	uint8_t stateBackslash; ///< If it noticed a backslash
-	uint8_t stateIsString; ///< If it noticed a \" (quotation mark)
+	unsigned int stateBackslash:1; ///< If it noticed a backslash
+	unsigned int stateIsString:1; ///< If it noticed a \" (quotation mark)
+	unsigned int stateVariableclimb:2; ///< different temp states for variable
 
 	//for the level ("#value{"s) of the parsing
 	int *ladder; ///< If the levels are freaked out we kinda need to wierdly save the levels.

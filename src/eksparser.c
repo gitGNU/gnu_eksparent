@@ -492,6 +492,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 					
 				return;
 			}
+			/*
 			else if(c=='<' && parser->stateIsString==0)
 			{
 				eks_parse_set_common_nothing(parser);
@@ -508,6 +509,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				parser->currentParentLevel++;
 				parser->prevParentLevel=parser->currentParentLevel;
 			}
+			*/
 			else if(c=='/' && parser->stateIsString==0)
 			{
 				//for comment
@@ -521,8 +523,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				parser->state=EKS_PARENT_STATE_VAR_COUNT;
 				eks_parse_set_common_nothing(parser);
 				
-				parser->prevParentLevel=parser->currentParentLevel;
-				parser->currentParentLevel=0;
+				return;
 			}
 			else
 			{
@@ -544,9 +545,56 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 		}
 		else if(parser->state==EKS_PARENT_STATE_VAR_COUNT)
 		{
-			if(c=='@')
+			if(c=='#')
 			{
-				parser->currentParentLevel++;
+				if(parser->stateVariableclimb==0)
+				{
+					parser->prevParentLevel=parser->currentParentLevel;
+					parser->currentParentLevel=1;
+					
+					parser->stateVariableclimb=1;
+				}
+				else if(parser->stateVariableclimb==1)
+					parser->currentParentLevel++;
+				
+				return;
+			}
+			else if(c=='?')
+			{
+				parser->stateVector^=1;
+				return;
+			}
+			else if(c=='!')
+			{
+				if(parser->stateVariableclimb==0)
+				{
+					parser->prevParentLevel=parser->currentParentLevel;
+					parser->currentParentLevel=0;
+					
+					parser->stateVariableclimb=3;
+				}
+				return;
+			}
+			else if(c=='>')
+			{
+				if(parser->stateVariableclimb==0)
+				{
+					parser->prevParentLevel=parser->currentParentLevel;
+					parser->currentParentLevel++;
+					
+					parser->stateVariableclimb=2;
+				}
+				return;
+			}
+			else if(c=='<')
+			{
+				if(parser->stateVariableclimb==0)
+				{
+					parser->prevParentLevel=parser->currentParentLevel;
+					parser->currentParentLevel--;
+					
+					parser->stateVariableclimb=2;
+				}
 				return;
 			}
 			else
@@ -640,25 +688,28 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				parser->state=EKS_PARENT_STATE_NOTHING;
 				
 				//####(4)->@(1->0)
-				printf("POS: %ld %ld\n",parser->currentParentLevel,parser->prevParentLevel);
-				parser->currentParentLevel--;
-				parser->currentParent=eks_parent_climb_parent(parser->currentParent,-(parser->currentParentLevel-parser->prevParentLevel));
+				//printf("POS: %ld %ld\n",parser->currentParentLevel,parser->prevParentLevel);
+				if(parser->stateVariableclimb)
+				{
+					parser->currentParent=eks_parent_climb_parent(parser->currentParent,-(parser->currentParentLevel-parser->prevParentLevel));
+					parser->stateVariableclimb=0;
+				}
 				
 				if(parser->currentWordSize>0)
 				{
 					char *str=eks_parse_get_text(parser);
 					if(str)
 					{
-						printf("VARIABLE<%ld>[%s]\n",parser->currentParentLevel,str);
+						printf("VARIABLE<%ld %ld>[%s]\n",parser->currentParentLevel,-(parser->currentParentLevel-parser->prevParentLevel),str);
 						
-						if(strcmp(str,"#")==0)
-						{
-							parser->stateVector^=1;
-						}
-						free(str);
 					}
 					parser->currentWordSize=0;
 				}
+				else
+					printf("VARIABLE<%ld %ld>\n",parser->currentParentLevel,-(parser->currentParentLevel-parser->prevParentLevel));
+				
+				//parser->currentParentLevel--;
+				//parser->currentParent=eks_parent_climb_parent(parser->currentParent,1);
 				
 				return;
 			}

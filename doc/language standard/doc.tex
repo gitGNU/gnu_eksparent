@@ -339,9 +339,10 @@
 		  first item
 		  second item
 		
-		@#
+		@!
 		
 		what happens here?
+		oh changed line
 		
 	\end{verbatim}
 	
@@ -354,7 +355,14 @@
 	}
 	\end{verbatim}
 	
-	Variables (@) works similar to how the lists work (#).
+	Variables (@) can have different parameters, such are:
+	\begin{itemize}
+		\item \emph{<} go down a level
+		\item \emph{>} go up a level
+		\item \emph{# or ###...} decide the level for the parent
+		\item \emph{!} go to the bottom level of a {} structure.
+		\item \emph{?} toggle between list mode and broad text mode
+	\end{itemize}
 	depending on where you are, you can insert variables accordingly. A variable may be written like this:
 	
 	\begin{verbatim}
