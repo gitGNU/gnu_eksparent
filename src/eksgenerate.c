@@ -133,13 +133,13 @@ char *eks_parent_dump_text(EksParent *thisParent)
 				//	returnString=g_strconcat(returnString,"#",thisname,"{\n",NULL);
 				//}
 			}
-			else
+			/*else
 			{
 				//if it is a comment (should be improved, this will also include the variables!)
 				void *temp=returnString;
 				returnString=g_strconcat(returnString,"//",thisname,"\n",NULL);
 				free(temp);
-			}
+			}*/
 		
 			//do it for all the sub-children
 			EksParent *firstUnit=thisParent->firstChild;

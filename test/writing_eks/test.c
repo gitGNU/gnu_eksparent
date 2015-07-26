@@ -57,7 +57,8 @@ int main(void)
 	childToInsert=eks_parent_new("another_text_tag",EKS_PARENT_TYPE_VALUE,NULL,NULL);
 	
 	eks_parent_add_child(childToInsert,"this should contain interesting text...",EKS_PARENT_TYPE_VALUE,NULL);
-	eks_parent_add_child(childToInsert,"even more text...",EKS_PARENT_TYPE_VALUE,NULL);
+	//add a double...
+	eks_parent_add_child(childToInsert,0.1617,EKS_PARENT_TYPE_VALUE,NULL);
 	
 	//lets see if it is on its own...
 	dumptext=eks_parent_dump_text(childToInsert);

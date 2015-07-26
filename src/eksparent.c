@@ -186,7 +186,26 @@ char *eks_parent_get_string(EksParent *thisParent)
 		}
 		else if(thisParent->type==EKS_PARENT_VALUE_DOUBLE)
 		{
-			return g_strdup_printf("%f", thisParent->dname);
+			/*
+			char t_dtostr[G_ASCII_DTOSTR_BUF_SIZE];
+		
+			g_ascii_dtostr(t_dtostr,G_ASCII_DTOSTR_BUF_SIZE,thisParent->dname);
+			
+			size_t dtostrlen=strlen(t_dtostr);
+			
+			char *outstr=malloc(sizeof(char)*(dtostrlen+1));
+			
+			if(outstr)
+			{
+				memcpy(outstr,t_dtostr,dtostrlen+1);
+				
+				return outstr;
+			}
+			eks_error_message("Could not allocate memory!");
+			return NULL;
+			*/
+		
+			return g_strdup_printf("%g", thisParent->dname);
 		}
 		
 		eks_error_message("Unknown type/value!");
