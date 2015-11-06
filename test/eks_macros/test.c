@@ -32,11 +32,6 @@ int main(void)
 	//we just want to insert text here
 	eks_parent_add_child(curChildParent,"blah blah",EKS_PARENT_TYPE_VALUE,NULL);
 	
-	//lets see if it works...
-	dumptext=eks_parent_dump_text(theParent);
-	printf("→ Lets see if \"eks_parent_add_child_from_type\" works...\n%s\n",dumptext);
-	free(dumptext);
-	
 	/* Lets try another method */
 	
 	EksParent *childToInsert;
@@ -47,11 +42,6 @@ int main(void)
 	//insert it
 	eks_parent_insert(curChildParent,childToInsert);
 	
-	//lets see if it was inserted...
-	dumptext=eks_parent_dump_text(theParent);
-	printf("→ Lets see if \"eks_parent_insert\" works...\n%s\n",dumptext);
-	free(dumptext);
-	
 	/* Lets make a "new" parent to insert...*/
 	
 	childToInsert=eks_parent_new("another_text_tag",EKS_PARENT_TYPE_VALUE,NULL,NULL);
@@ -60,42 +50,57 @@ int main(void)
 	//add a double...
 	eks_parent_add_child(childToInsert,(double)5/3,EKS_PARENT_TYPE_VALUE,NULL);
 	
-	//lets see if it is on its own...
-	dumptext=eks_parent_dump_text(childToInsert);
-	printf("→ Lets see if it is standalone first...\n%s\n",dumptext);
-	free(dumptext);
-	
 	eks_parent_insert(curChildParent,childToInsert);
-	
+
 	//lets see if it was inserted...
 	dumptext=eks_parent_dump_text(theParent);
-	printf("→ Lets see if a big \"eks_parent_insert\" works...\n%s\n",dumptext);
+	printf("%s\n",dumptext);
 	
 	free(dumptext);
-
-	eks_parent_foreach_child_start(theParent->firstChild,EksParent *loopParent)
-	{
-		printf("name: %s\n",loopParent->name);
-		if(loopParent->firstChild!=NULL)
-		{
-			eks_parent_foreach_child_start(loopParent,EksParent *loopParent2)
-			{
-				printf("name-in: %s\n",eks_parent_get_string(loopParent2));
-			}eks_parent_foreach_child_end;
-		}
-	}eks_parent_foreach_child_end;
 	
-	eks_parent_foreach_child_start(theParent->firstChild,EksParent *loopParent)
+	//start the macro testing
+
+	#ifdef ASM_OUT
+		asm("START OF FIRST LOOP");
+	#endif
+
+	eks_parent_foreach_child_start_test(theParent->firstChild,EksParent *loopParent)
 	{
 		printf("name: %s\n",loopParent->name);
 		if(loopParent->firstChild!=NULL)
 		{
-			eks_parent_foreach_child_start(loopParent,EksParent *loopParent2)
+			eks_parent_foreach_child_start_test(loopParent,EksParent *loopParent2)
 			{
 				printf("name-in: %s\n",eks_parent_get_string(loopParent2));
-			}eks_parent_foreach_child_end;
+			}eks_parent_foreach_child_end_test;
 		}
-	}eks_parent_foreach_child_end;
+	}eks_parent_foreach_child_end_test;
+	
+	#ifdef ASM_OUT
+		asm("END OF FIRST LOOP");
+	#endif
+	
+	printf("test other version of the same macro\n");
+	
+	#ifdef ASM_OUT
+		asm("START OF SECOND LOOP");
+	#endif
+	
+	eks_parent_foreach_child_start(theParent->firstChild,loopParent)
+	{
+		printf("name: %s\n",loopParent->name);
+		if(loopParent->firstChild!=NULL)
+		{
+			eks_parent_foreach_child_start(loopParent,loopParent2)
+			{
+				printf("name-in: %s\n",eks_parent_get_string(loopParent2));
+			}eks_parent_foreach_child_end(loopParent,loopParent2);
+		}
+	}eks_parent_foreach_child_end(theParent->firstChild,loopParent);
+	
+	#ifdef ASM_OUT
+		asm("END OF SECOND LOOP");
+	#endif
 	
 	/* Clean everything up */
 	

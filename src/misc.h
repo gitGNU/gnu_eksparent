@@ -1,7 +1,6 @@
 /**
 	@file
 	@author Florian Evaldsson
-	@version 0.1
 	
 	@section LICENSE
 	
@@ -22,5 +21,6 @@
 #pragma once
 
 char *eks_int_to_string(intptr_t num);
+char *eks_double_to_string(double dnum);
 
 EksParentValue eks_string_to_double(const char *str,double *outd,intptr_t *outi);

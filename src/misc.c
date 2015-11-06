@@ -1,7 +1,6 @@
 /**
 	@file
 	@author Florian Evaldsson
-	@version 0.1
 	
 	@section LICENSE
 	
@@ -24,6 +23,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
+//#include <locale.h>
 #include "eksparent.h"
 #include "misc.h"
 
@@ -82,6 +82,89 @@ char *eks_int_to_string(intptr_t num)
 		length--;
 	}
 	return retString;
+}
+
+/**
+	Converts a double to a string (this was meant to be done in a better way)
+	
+	@param dnum
+		the input double
+	@return
+		the output string
+*/
+char *eks_double_to_string(double dnum)
+{
+/*	intptr_t num=dnum;*/
+/*	double restnum=dnum-(double)num;*/
+
+/*	int isNegative=0;*/
+/*	if(dnum<0)*/
+/*	{*/
+/*		isNegative=1;*/
+/*		//make it positive*/
+/*		num=-num;*/
+/*		restnum=-restnum;*/
+/*	}*/
+/*	*/
+/*	int lengthint=log10s(num);*/
+/*	int lengthintn=lengthint;*/
+/*	int lengthdec=15;*/
+/*	int length=lengthint+lengthdec;*/
+/*	*/
+/*	char* retString=malloc(sizeof(char)*(length+3+isNegative));*/
+/*	*/
+/*	retString[length+2+isNegative]='\0';*/
+/*	retString[lengthint+1+isNegative]='.';*/
+/*	*/
+/*	if(isNegative)*/
+/*	{*/
+/*		retString[0]='-';*/
+/*	}*/
+/*	*/
+/*	while(0<=lengthintn)*/
+/*	{*/
+/*		retString[lengthintn+isNegative]='0'+num%10;*/
+/*		num=(intptr_t)(num/10);*/
+/*		lengthintn--;*/
+/*	}*/
+/*	*/
+/*	for(int restcount=0;restcount<=lengthdec;restcount++)*/
+/*	{*/
+/*		restnum=(restnum*10);*/
+/*		retString[lengthint+isNegative+2+restcount]='0'+((int)restnum)%10;*/
+/*		restnum=restnum-(int)restnum;*/
+/*		*/
+/*	}*/
+/*	*/
+/*	return retString;*/
+	
+	//char *ourlocale=setlocale(LC_NUMERIC, NULL);
+	//setlocale(LC_NUMERIC, "C");
+	
+	char convtostr[G_ASCII_DTOSTR_BUF_SIZE];
+	
+	sprintf(convtostr, "%.17g", dnum);
+	
+	//setlocale(LC_NUMERIC, ourlocale);
+	
+	char *newstr=g_strdup(convtostr);
+	
+	char *newstrcheck=newstr;
+	
+	//if it is another locale ... (faster than setlocale i guess ...)
+	while(*newstrcheck)
+	{
+		char c=*newstrcheck;
+		if(!((c>='0' && c<='9') || (c=='-')))
+		{
+			*newstrcheck='.';
+			break;
+		}
+		
+		newstrcheck++;
+	}
+	
+	return newstr;
 }
 
 /**

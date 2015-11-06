@@ -1,7 +1,6 @@
 /**
 	@file
 	@author Florian Evaldsson
-	@version 0.1
 	
 	@section LICENSE
 	
@@ -52,6 +51,10 @@ static void eks_parent_set_base(EksParent *thisParent, EksParentType ptype)
 		{
 			thisParent->structure=thisParent->upperEksParent->structure+1;
 		}
+	}
+	else if(ptype==EKS_PARENT_TYPE_VARIABLE)
+	{
+		thisParent->structure=-2;
 	}
 	else
 	{
@@ -185,27 +188,8 @@ char *eks_parent_get_string(EksParent *thisParent)
 			return eks_int_to_string(thisParent->iname);
 		}
 		else if(thisParent->type==EKS_PARENT_VALUE_DOUBLE)
-		{
-			/*
-			char t_dtostr[G_ASCII_DTOSTR_BUF_SIZE];
-		
-			g_ascii_dtostr(t_dtostr,G_ASCII_DTOSTR_BUF_SIZE,thisParent->dname);
-			
-			size_t dtostrlen=strlen(t_dtostr);
-			
-			char *outstr=malloc(sizeof(char)*(dtostrlen+1));
-			
-			if(outstr)
-			{
-				memcpy(outstr,t_dtostr,dtostrlen+1);
-				
-				return outstr;
-			}
-			eks_error_message("Could not allocate memory!");
-			return NULL;
-			*/
-		
-			return g_strdup_printf("%g", thisParent->dname);
+		{	
+			return eks_double_to_string(thisParent->dname);
 		}
 		
 		eks_error_message("Unknown type/value!");
@@ -226,17 +210,22 @@ char *eks_parent_get_string(EksParent *thisParent)
 */
 intptr_t eks_parent_get_int(EksParent *thisParent)
 {
-	if(thisParent->type!=EKS_PARENT_VALUE_INT)
+	if(thisParent->type!=EKS_PARENT_VALUE_DOUBLE && thisParent->type!=EKS_PARENT_VALUE_INT)
 	{
 		eks_warning_message("The type is not an int!");
 	}
 	
 	if(thisParent)
-		return thisParent->iname;
+	{
+		if(thisParent->type==EKS_PARENT_VALUE_INT)
+			return thisParent->iname;
+		else
+			return (intptr_t)(int)thisParent->dname;
+	}
 	else
 	{
 		eks_error_message("The parent was NULL!");
-		return NULL;
+		return 0;
 	}
 }
 
@@ -250,13 +239,18 @@ intptr_t eks_parent_get_int(EksParent *thisParent)
 */
 double eks_parent_get_double(EksParent *thisParent)
 {
-	if(thisParent->type!=EKS_PARENT_VALUE_DOUBLE)
+	if(thisParent->type!=EKS_PARENT_VALUE_DOUBLE && thisParent->type!=EKS_PARENT_VALUE_INT)
 	{
 		eks_warning_message("The type is not a double!");
 	}
 	
 	if(thisParent)
-		return thisParent->dname;
+	{
+		if(thisParent->type==EKS_PARENT_VALUE_DOUBLE)
+			return thisParent->dname;
+		else
+			return (double)thisParent->iname;
+	}
 	else
 	{
 		eks_error_message("The parent was NULL!");
@@ -810,7 +804,7 @@ EksParent* eks_parent_get_child_from_name(EksParent *thisParent,const char *temp
 			loopUnit=loopUnit->nextChild;
 		}while(loopUnit!=firstUnit);
 		
-		eks_error_message("No such object found [%s]!",tempName);
+		//eks_warning_message("No such object found [%s]!",tempName);
 	}
 	else
 	{
@@ -1168,6 +1162,22 @@ void *eks_parent_custom_get(EksParent *thisParent,int pos)
 	}
 	
 	return ((void**)(thisParent->custom))[pos];
+}
+
+/**
+	Get the first extras child
+	
+	@param thisParent
+		the parent to get it from
+	@return
+		the extras parent
+*/
+EksParent *eks_get_extras(EksParent *thisParent)
+{
+	if(thisParent && thisParent->firstExtras)
+		return thisParent->firstExtras;
+	else
+		return NULL;
 }
 
 #ifndef CC_COMPILING_EKS

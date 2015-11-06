@@ -1,7 +1,6 @@
 /**
 	@file
 	@author Florian Evaldsson
-	@version 0.1
 	
 	@section LICENSE
 	
@@ -39,15 +38,26 @@ do i need previous parent level?
 
 #include "eksparent.h"
 
+/// this is the starting buffer for the common words or strings
+#define EKS_PARSER_COMMON_START_BUFFER 500
+///this is the starting buffer for the comments
+#define EKS_PARSER_COMMENT_START_BUFFER 500
+
+static void eks_parse_set_common_nothing(EksParseType *parser);
+static EksParent *eks_parse_set_common_and_list(EksParseType *parser);
+static unsigned int eks_parse_get_current_line(EksParseType *parser);
+
 /**
 	Default function to initiate and parse the data
 	
 	@param name
 		name of the toplevel parent
+	@param upperLevelParser
+		if its a parser inside a [] notation and require its parent. This value needs to be NULL when initializing the first parser.
 	@return
 		returns the a new parsing object, ready to be used.
 */
-EksParseType *eks_parent_init_parse(const char *name)
+EksParseType *eks_parent_init_parse(const char *name, EksParseType *upperLevelParser)
 {
 	EksParent *par=eks_parent_new(name,EKS_PARENT_TYPE_VALUE,NULL,NULL);
 	
@@ -60,6 +70,28 @@ EksParseType *eks_parent_init_parse(const char *name)
 	parser->state=EKS_PARENT_STATE_NOTHING;
 	parser->stateComment=EKS_PARENT_STATE_COMMENT_NONE;
 	//parser->currentParentLevel=0;
+	
+	if(upperLevelParser)
+	{
+		parser->upperInternalValueParser=upperLevelParser;
+		
+		parser->commonWord=upperLevelParser->commonWord;
+		parser->commentWord=upperLevelParser->commentWord;
+	}
+	else
+	{
+		EksParseString *common=calloc(1,sizeof(EksParseString));
+		EksParseString *comment=calloc(1,sizeof(EksParseString));
+	
+		parser->commonWord=common;
+		parser->commentWord=comment;
+		
+		common->word=malloc(EKS_PARSER_COMMON_START_BUFFER*sizeof(char));
+		comment->word=malloc(EKS_PARSER_COMMENT_START_BUFFER*sizeof(char));
+		
+		common->wordSize=EKS_PARSER_COMMON_START_BUFFER;
+		comment->wordSize=EKS_PARSER_COMMENT_START_BUFFER;
+	}
 	
 	return parser;
 }
@@ -74,17 +106,53 @@ EksParseType *eks_parent_init_parse(const char *name)
 */
 EksParent *eks_parent_exit_parse(EksParseType *parser)
 {
+	//temporary to force all text to end
+	if(parser->state==EKS_PARENT_STATE_NOTHING)
+		eks_parse_set_common_nothing(parser);
+	else if(parser->state==EKS_PARENT_STATE_AND_NAME || parser->state==EKS_PARENT_STATE_AND_AFTER)
+		eks_parse_set_common_and_list(parser);
+	else
+	{
+		eks_error_message("syntax error! at line %d",eks_parse_get_current_line(parser));
+	}
+
 	//for the return variable
 	EksParent *par=parser->parent;
 
-	free(parser->word);
-	free(parser->commentWord);
+	if(parser->upperInternalValueParser==NULL)
+	{
+		free(parser->commonWord->word);
+		free(parser->commentWord->word);
+		free(parser->commonWord);
+		free(parser->commentWord);
+	}
+	
 	free(parser->ladder);
 		
 	free(parser);
 	
 	//return the variable
 	return par;
+}
+
+/**
+	Gets the current line number in the parsing
+	
+	@param parser
+		The input parser
+	@return
+		Returns the current line number
+*/
+static unsigned int eks_parse_get_current_line(EksParseType *parser)
+{
+	EksParseType *tempParser=parser;
+	
+	while(tempParser->upperInternalValueParser!=NULL)
+	{
+		tempParser=tempParser->upperInternalValueParser;
+	}
+	
+	return tempParser->currentLineAmount;
 }
 
 /**
@@ -99,23 +167,31 @@ EksParent *eks_parent_exit_parse(EksParseType *parser)
 	@param c
 		input char to insert into word.
 */
-static void eks_parse_add_char_std(char **word,size_t *wordSize,size_t *currentWordSize,char c)
+static void eks_parse_add_char_std(EksParseString *string, char c)
 {
-	(*currentWordSize)++;
+	string->currentWordSize++;
+	
+	size_t newWordSize=string->currentWordSize;
 			
-	if(*currentWordSize>*wordSize)
+	if(newWordSize>string->wordSize)
 	{
-		(*wordSize)=(*currentWordSize);
-		(*word)=realloc((*word),sizeof(char)*(*wordSize));
+		string->wordSize=newWordSize;
+		string->word=realloc(string->word,sizeof(char)*newWordSize);
 	}
 	
-	(*word)[(*currentWordSize)-1]=c;
+	string->word[newWordSize-1]=c;
 }
 
 /**Add a char to the string in the parsing structure */
-#define eks_parse_add_char(parser,char) eks_parse_add_char_std(&parser->word,&parser->wordSize,&parser->currentWordSize,char)
+#define eks_parse_add_char(parser,char) eks_parse_add_char_std(parser->commonWord,char)
 /**Add a char to the comment in the parsing structure */
-#define eks_parse_add_char_comment(parser,char) eks_parse_add_char_std(&parser->commentWord,&parser->commentWordSize,&parser->currentCommentWordSize,char)
+void eks_parse_add_char_comment(EksParseType *parser,char c)
+{
+	if(parser->stateIsInternalValueParent==0)
+	{
+		eks_parse_add_char_std(parser->commentWord,c);
+	}
+}
 
 /**
 	Gets the text from a string stream
@@ -129,76 +205,86 @@ static void eks_parse_add_char_std(char **word,size_t *wordSize,size_t *currentW
 	@return
 		returns a std C string
 */
-static char *eks_parse_get_text_std(char *word,size_t wordSize,size_t currentWordSize)
+static char *eks_parse_get_text_std(EksParseString *string)
 {
-	char *str=NULL;
-	size_t strlength=0;
-	char c;
+	char *word=string->word;
+	//size_t wordSize=string->wordSize;
+	size_t currentWordSize=string->currentWordSize;
 	
-	uint8_t backslash=0;
-	size_t rightTrim=0;
-	
-	for(int i=0;i<currentWordSize;i++)
+	if(currentWordSize>0)
 	{
-		c=word[i];
-		
-		if(backslash)
-		{
-			backslash=0;
-		}
-		else
-		{
-			if(c=='"')
-			{
-				//shrink string size also (remove "s)
-				continue;
-			}
-			
-			if((c!='\t' && c!=' ' && c!='\n') && str==NULL)
-			{
-				str=malloc(sizeof(char)*(currentWordSize-i+1));
-			}
-			
-			if(c=='\\')
-			{
-				backslash=1;
-				continue;
-			}
-		}
-		
-		if(str)
-		{
-			str[strlength]=c;
-			strlength++;
-		}
-	}
+		char *str=NULL;
+		size_t strlength=0;
+		char c;
 	
-	if(str)
-	{
+		uint8_t backslash=0;
+		size_t rightTrim=0;
+	
 		for(int i=0;i<currentWordSize;i++)
 		{
-			c=word[currentWordSize-i-1];
-			if((c!='\t' && c!=' ' && c!='\n'))
+			c=word[i];
+		
+			if(backslash)
 			{
-				rightTrim=i;
-				break;
+				backslash=0;
+			}
+			else
+			{
+				if(c=='"')
+				{
+					//shrink string size also (remove "s)
+					continue;
+				}
+			
+				if((c!='\t' && c!=' ' && c!='\n') && str==NULL)
+				{
+					str=malloc(sizeof(char)*(currentWordSize-i+1));
+				}
+			
+				if(c=='\\')
+				{
+					backslash=1;
+					continue;
+				}
+			}
+		
+			if(str)
+			{
+				str[strlength]=c;
+				strlength++;
 			}
 		}
+	
+		if(str)
+		{
+			for(int i=0;i<currentWordSize;i++)
+			{
+				c=word[currentWordSize-i-1];
+				if((c!='\t' && c!=' ' && c!='\n'))
+				{
+					rightTrim=i;
+					break;
+				}
+			}
 
-		str=realloc(str,sizeof(char)*(strlength-rightTrim+1));
-		str[strlength-rightTrim]='\0';
+			str=realloc(str,sizeof(char)*(strlength-rightTrim+1));
+			str[strlength-rightTrim]='\0';
 		
-		return str;
+			string->currentWordSize=0;
+		
+			return str;
+		}
 	}
-
 	//on fail
+	string->currentWordSize=0;
+
 	return NULL;
 }
 
 /** Gets the text from the word */
-#define eks_parse_get_text(parser) eks_parse_get_text_std(parser->word,parser->wordSize,parser->currentWordSize)
+#define eks_parse_get_text(parser) eks_parse_get_text_std(parser->commonWord)
 /** Gets the text from the comment */
-#define eks_parse_get_text_comment(parser) eks_parse_get_text_std(parser->commentWord,parser->commentWordSize,parser->currentCommentWordSize)
+#define eks_parse_get_text_comment(parser) eks_parse_get_text_std(parser->commentWord)
 
 /**
 	Happens when the "and name" (\#\#name) is finnished and wants to do something with the name.
@@ -210,16 +296,21 @@ static EksParent *eks_parse_set_common_and_list(EksParseType *parser)
 {
 	char *str=eks_parse_get_text(parser);
 
-	printf("AND LIST<%d>[%s]\n",(int)parser->currentParentLevel,str);
+	eks_debug_message("AND LIST<%d>[%s]\n",(int)parser->currentParentLevel,str);
 	
 	EksParent *tempParent=eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_VALUE,NULL);
 	tempParent->rt=EKS_PARENT_IS_TAGVALUE;
-	tempParent->rt=EKS_PARENT_IS_NOSPAN;
+	
+	if(parser->internalValueParserResult)
+	{
+		tempParent->firstExtras=parser->internalValueParserResult;
+		parser->internalValueParserResult=NULL;
+	}
 	
 	if(str)
 		free(str);
 			
-	parser->currentWordSize=0;
+	//parser->currentWordSize=0;
 	
 	return tempParent;
 }
@@ -232,19 +323,43 @@ static EksParent *eks_parse_set_common_and_list(EksParseType *parser)
 */
 static void eks_parse_set_common_nothing(EksParseType *parser)
 {
-	if(parser->currentWordSize>0)
+	char *str=eks_parse_get_text(parser);
+	
+	if(str)
 	{
-		char *str=eks_parse_get_text(parser);
-		if(str)
-		{
-			printf("<%d>[%s]\n",(int)parser->currentParentLevel,str);
-			
-			EksParent *tempParent=eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_VALUE,NULL);
-			tempParent->rt=EKS_PARENT_IS_UNTAGGED;
-			
-			free(str);
-		}
-		parser->currentWordSize=0;
+		eks_debug_message("<%d>[%s]\n",(int)parser->currentParentLevel,str);
+		
+		EksParent *tempParent=eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_VALUE,NULL);
+		tempParent->rt=EKS_PARENT_IS_UNTAGGED;
+		
+		free(str);
+	}
+}
+
+/**
+	The function used to end the optimization of the ']', since it needs to be defined on multiple spots.
+	
+	@param parser
+		the input parser
+*/
+static void eks_parse_optimize_square_bracket_end(EksParseType *parser)
+{
+	EksParseType *upperParser=parser->upperInternalValueParser;
+	upperParser->internalValueParserResult=eks_parent_exit_parse(parser);
+	upperParser->stateIsInternalValueParent=0;
+	
+	EksParseString *currword=upperParser->commonWord;
+	
+	eks_debug_message("storedword %s\n",upperParser->storedWord);
+	
+	if(upperParser->storedWord!=NULL && currword->currentWordSize==0)
+	{
+		size_t storedWordSize=strlen(upperParser->storedWord);
+	
+		memcpy(currword->word,upperParser->storedWord,storedWordSize);
+		currword->currentWordSize=storedWordSize;
+		free(upperParser->storedWord);
+		upperParser->storedWord=NULL;
 	}
 }
 
@@ -258,6 +373,26 @@ static void eks_parse_set_common_nothing(EksParseType *parser)
 */
 void eks_parent_parse_char(EksParseType *parser, char c)
 {
+	//if it is [#internal value:text]
+	if(parser->stateIsInternalValueParent>=1)
+	{
+		//run only once
+		if(parser->stateIsInternalValueParent==1)
+		{
+			parser->internalValueParser=eks_parent_init_parse(NULL,parser);
+			parser->stateIsInternalValueParent=2;
+		}
+	
+		eks_parent_parse_char(parser->internalValueParser,c);
+		return;
+	}
+
+	//count for each new line
+	if(c=='\n' && parser->upperInternalValueParser==NULL)
+	{
+		parser->currentLineAmount++;
+	}
+
 	//check comment type
 	if(parser->stateComment==EKS_PARENT_STATE_COMMENT)
 	{
@@ -287,19 +422,15 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 		{
 			parser->stateComment=EKS_PARENT_STATE_COMMENT_NONE;
 			
-			if(parser->currentCommentWordSize>0)
+			char *str=eks_parse_get_text_comment(parser);
+			if(str)
 			{
-				char *str=eks_parse_get_text_comment(parser);
-				if(str)
-				{
-					printf("COMMENT<%ld>[%s]\n",parser->currentParentLevel,str);
-					
-					EksParent *theChild=eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_COMMENT,NULL);
-					theChild->rt=EKS_PARENT_IS_NOSPAN;
-					
-					free(str);
-				}
-				parser->currentCommentWordSize=0;
+				eks_debug_message("COMMENT<%ld>[%s]\n",parser->currentParentLevel,str);
+				
+				EksParent *theChild=eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_COMMENT,NULL);
+				theChild->rt=EKS_PARENT_IS_NOSPAN;
+				
+				free(str);
 			}
 		}
 		else
@@ -314,20 +445,16 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 			if(parser->commentNestleSize<=0)
 			{
 				parser->stateComment=EKS_PARENT_STATE_COMMENT_NONE;
-			
-				if(parser->currentCommentWordSize>0)
+
+				char *str=eks_parse_get_text_comment(parser);
+				if(str)
 				{
-					char *str=eks_parse_get_text_comment(parser);
-					if(str)
-					{
-						printf("ML COMMENT<%ld>[%s] %c\n",parser->currentParentLevel,str,c);
+					eks_debug_message("ML COMMENT<%ld>[%s] %c\n",parser->currentParentLevel,str,c);
+				
+					EksParent *theChild=eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_COMMENT,NULL);
+					theChild->rt=EKS_PARENT_IS_SPAN;
 					
-						EksParent *theChild=eks_parent_add_child(parser->currentParent,str,EKS_PARENT_TYPE_COMMENT,NULL);
-						theChild->rt=EKS_PARENT_IS_SPAN;
-						
-						free(str);
-					}
-					parser->currentCommentWordSize=0;
+					free(str);
 				}
 			
 				return;
@@ -376,6 +503,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 		
 		return;
 	}
+	
 	/******
 	For non comments
 	******/
@@ -397,19 +525,32 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 			{
 				//go down to state name
 				parser->state=EKS_PARENT_STATE_AND_NAME;
+				parser->stateIsDollarvalue=0;
 			}
 			else
 			{
-				parser->stateVector=1;
 				parser->state=EKS_PARENT_STATE_NOTHING;
 				
 				//it should be like this
 				//#->##
+				//if(parser->stateIsDollarvalue==0)
 				parser->currentParent=eks_parent_climb_parent(parser->currentParent,-(parser->currentParentLevel-parser->prevParentLevel-1));
 				
-				parser->currentParent=eks_parse_set_common_and_list(parser);
+				EksParent *theChild=eks_parse_set_common_and_list(parser);
+				
+				if(parser->stateIsDollarvalue==0)
+				{
+					parser->currentParent=theChild;
+				}
+				else
+				{
+					parser->currentParentLevel--;
+				}
 			}
 		}
+		
+		//for optimization
+		int stateIsNotString=(parser->stateIsString==0);
 		
 		if(parser->state==EKS_PARENT_STATE_NOTHING)
 		{
@@ -424,7 +565,13 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				parser->stateIsString^=1;
 				eks_parse_add_char(parser,c);
 			}
-			else if(c=='#' && parser->stateIsString==0)
+			else if(c==']' && stateIsNotString && parser->upperInternalValueParser)
+			{
+				eks_parse_optimize_square_bracket_end(parser);
+				
+				return;
+			}
+			else if(c=='#' && stateIsNotString)
 			{
 				parser->state=EKS_PARENT_STATE_AND_COUNT;
 				
@@ -433,14 +580,26 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				parser->prevParentLevel=parser->currentParentLevel;
 				parser->currentParentLevel=0;
 			}
-			else if(((c=='\n' && parser->stateVector==1) || c==',') && parser->stateIsString==0)
+			else if(c=='$' && stateIsNotString)
+			{
+				parser->state=EKS_PARENT_STATE_AND_NAME;
+				parser->stateIsDollarvalue=1;
+				
+				eks_parse_set_common_nothing(parser);
+				
+				parser->prevParentLevel=parser->currentParentLevel;
+				parser->currentParentLevel++;
+				
+				return;
+			}
+			else if((c=='\n' || c=='|') && stateIsNotString)
 			{
 				//for and lists
 				eks_parse_set_common_nothing(parser);
 				
 				return;
 			}
-			else if(c=='{' && parser->stateIsString==0)
+			else if(c=='{' && stateIsNotString)
 			{
 				eks_parse_set_common_nothing(parser);
 				
@@ -448,8 +607,6 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				parser->currentParentLevel++;
 				
 				//at {
-				
-				parser->stateVector=0;
 				
 				parser->ladderCurrentAmount++;
 				
@@ -472,7 +629,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 			}
 			
 			//needs more testing
-			else if(c=='}' && parser->stateIsString==0)
+			else if(c=='}' && stateIsNotString)
 			{
 				eks_parse_set_common_nothing(parser);
 			
@@ -492,32 +649,14 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 					
 				return;
 			}
-			/*
-			else if(c=='<' && parser->stateIsString==0)
-			{
-				eks_parse_set_common_nothing(parser);
-			
-				parser->currentParent=eks_parent_climb_parent(parser->currentParent,1);
-				parser->currentParentLevel--;
-				parser->prevParentLevel=parser->currentParentLevel;
-			}
-			else if(c=='>' && parser->stateIsString==0)
-			{
-				eks_parse_set_common_nothing(parser);
-			
-				parser->currentParent=eks_parent_climb_parent(parser->currentParent,-1);
-				parser->currentParentLevel++;
-				parser->prevParentLevel=parser->currentParentLevel;
-			}
-			*/
-			else if(c=='/' && parser->stateIsString==0)
+			else if(c=='/' && stateIsNotString)
 			{
 				//for comment
 				//eks_parse_set_common_nothing(parser);
 				parser->stateComment=EKS_PARENT_STATE_COMMENT;
 				return;
 			}
-			else if(c=='@' && parser->stateIsString==0)
+			else if(c=='@' && stateIsNotString)
 			{
 				//for variable
 				parser->state=EKS_PARENT_STATE_VAR_COUNT;
@@ -541,6 +680,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 			else
 			{
 				parser->state=EKS_PARENT_STATE_AND_NAME;
+				parser->stateIsDollarvalue=0;
 			}
 		}
 		else if(parser->state==EKS_PARENT_STATE_VAR_COUNT)
@@ -557,11 +697,6 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				else if(parser->stateVariableclimb==1)
 					parser->currentParentLevel++;
 				
-				return;
-			}
-			else if(c=='?')
-			{
-				parser->stateVector^=1;
 				return;
 			}
 			else if(c=='!')
@@ -622,20 +757,54 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				
 				eks_parse_add_char(parser,c);
 			}
-			else if((c==':' || c=='\n') && parser->stateIsString==0)
+			else if(c==']' && stateIsNotString && parser->upperInternalValueParser)
+			{
+				eks_parse_optimize_square_bracket_end(parser);
+				
+				return;
+			}
+			else if((c==':' || c=='\n') && stateIsNotString && parser->stateIsDollarvalue==0)
 			{	
 				parser->state=EKS_PARENT_STATE_AND_AFTER;
 			}
-			else if(c=='/' && parser->stateIsString==0)
+			else if((c==' ' || c=='\n' || c=='|') && stateIsNotString && parser->stateIsDollarvalue==1)
+			{	
+				parser->state=EKS_PARENT_STATE_AND_AFTER;
+			}
+			//if something is written: #hello#hello:hai
+			else if(c=='#' && stateIsNotString)
 			{
-				//eks_parse_set_common_and_list(parser);
+				parser->state=EKS_PARENT_STATE_AND_COUNT;
+				
+				//it should be like this
+				//#->##
+				parser->currentParent=eks_parent_climb_parent(parser->currentParent,-(parser->currentParentLevel-parser->prevParentLevel-1));
+				
+				EksParent *theChild=eks_parse_set_common_and_list(parser);
+				
+				if(parser->stateIsDollarvalue==0)
+				{
+					parser->currentParent=theChild;
+				}
+				
+				parser->prevParentLevel=parser->currentParentLevel;
+				parser->currentParentLevel=0;
+			}
+			else if(c=='/' && stateIsNotString)
+			{
 				parser->stateComment=EKS_PARENT_STATE_COMMENT;
 				
 				return;
 			}
-			else if(c=='{' && parser->stateIsString==0)
+			else if(c=='[' && stateIsNotString)
 			{
-				parser->stateVector=0;
+				parser->storedWord=eks_parse_get_text(parser);
+			
+				parser->stateIsInternalValueParent=1;
+				return;
+			}
+			else if(c=='{' && stateIsNotString)
+			{
 				parser->state=EKS_PARENT_STATE_NOTHING;
 				
 				parser->ladderCurrentAmount++;
@@ -683,7 +852,7 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 				
 				eks_parse_add_char(parser,c);
 			}
-			else if((c==' ' || c=='\t' || c=='\n') && parser->stateIsString==0)
+			else if((c==' ' || c=='\t' || c=='\n' || c=='|') && stateIsNotString)
 			{
 				parser->state=EKS_PARENT_STATE_NOTHING;
 				
@@ -695,18 +864,15 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 					parser->stateVariableclimb=0;
 				}
 				
-				if(parser->currentWordSize>0)
+				char *str=eks_parse_get_text(parser);
+				if(str)
 				{
-					char *str=eks_parse_get_text(parser);
-					if(str)
-					{
-						printf("VARIABLE<%ld %ld>[%s]\n",parser->currentParentLevel,-(parser->currentParentLevel-parser->prevParentLevel),str);
-						
-					}
-					parser->currentWordSize=0;
+					eks_debug_message("VARIABLE<%ld %ld>[%s]\n",parser->currentParentLevel,-(parser->currentParentLevel-parser->prevParentLevel),str);
+					
+					free(str);
 				}
 				else
-					printf("VARIABLE<%ld %ld>\n",parser->currentParentLevel,-(parser->currentParentLevel-parser->prevParentLevel));
+					eks_debug_message("VARIABLE<%ld %ld>\n",parser->currentParentLevel,-(parser->currentParentLevel-parser->prevParentLevel));
 				
 				//parser->currentParentLevel--;
 				//parser->currentParent=eks_parent_climb_parent(parser->currentParent,1);
@@ -733,9 +899,9 @@ void eks_parent_parse_char(EksParseType *parser, char c)
 	@return
 		returns the finnished parent, which you can use
 */
-EksParent *eks_parent_parse_text(unsigned char *buffer,const char *name)
+EksParent *eks_parent_parse_text(const char *buffer,const char *name)
 {
-	EksParseType *parser=eks_parent_init_parse(name);
+	EksParseType *parser=eks_parent_init_parse(name,NULL);
 	
 	while(*buffer)
 	{
@@ -754,19 +920,19 @@ EksParent *eks_parent_parse_text(unsigned char *buffer,const char *name)
 	@return NEW, FREE_WITH( eks_parent_destroy )
 		the output EksParent structure
 */
-EksParent *eks_parent_parse_file(char *filename)
+EksParent *eks_parent_parse_file(const char *filename)
 {
 	char c;
 	FILE *filepointer;
 	
 	
-	EksParseType *parser=eks_parent_init_parse(filename);
+	EksParseType *parser=eks_parent_init_parse(filename,NULL);
 	
 	filepointer=fopen(filename, "r");
 	
 	if(filepointer) 
 	{ 
-		//kollar igenom varje bokstav i filen även slutbokstaven
+		//goes through the entire file, even the last character
 		while((c=fgetc(filepointer)) != EOF)
 		{
 			eks_parent_parse_char(parser,c);
@@ -774,7 +940,7 @@ EksParent *eks_parent_parse_file(char *filename)
 	}
 	else
 	{
-		//om det inte går att öppna filen.
+		//if its not possible to open the file
 		eks_error_message("Could not open \"%s\"\n",filename);
 		fclose(filepointer);
 		eks_parent_exit_parse(parser);

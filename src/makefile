@@ -22,13 +22,19 @@ VERSION = 0.1
 CC = gcc
 
 ###################################
-#	C-FLAGS
+#	C FLAGS
 #	LD FLAGS
 ###################################
 
+ifdef DEBUG
+DEBUG_OPTIONS = -DEKS_SHOW_DEBUG
+else
+DEBUG_OPTIONS =
+endif
+
 CFLAGS = -c -fPIC -std=c99 
 CFLAGS += -g -Wall
-CFLAGS += -DCC_COMPILING_EKS
+CFLAGS += -DCC_COMPILING_EKS $(DEBUG_OPTIONS)
 CFLAGS += $(shell pkg-config --cflags glib-2.0)
 
 LDFLAGS = -lm

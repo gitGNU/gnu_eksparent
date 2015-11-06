@@ -50,7 +50,7 @@
 
 	{
 		\Large
-		\textsc{\textbf{\textit{The eks language standard v0.1}}}
+		\textsc{\textbf{\textit{The eks language standard v0.1 (Draft)}}}
 		\normalsize
 	}
 
@@ -89,7 +89,7 @@
 	This is the programming standard for the markup language - eks. 
 	Eks is mainly designed not to be bound to the english language (when used). Its also designed mainly to be easy to read.
 	
-	\emph{Note: This is an early version of the markup language. Functionality of eks may change until version 1.0, an example may be that the ascii char for a vector may be \& one day and # the next.}
+	\emph{Note: This is an early version of the markup language. Functionality of eks may change until version 1.0, an example may be that the ascii char for a vector may be \& one day and \# the next.}
 	
 	\newpage
 	
@@ -135,7 +135,7 @@
 	Cons:
 	
 	\begin{itemize}
-		\item little possibilities for nestling, reason behind \begin{} and \end{}
+		\item little possibilities for nestling, reason behind begin\{\} and end\{\}
 		\item no support for multiline comments
 	\end{itemize}
 	
@@ -256,7 +256,7 @@
 	
 	\section{Simple example}
 	
-	Eks is divided like a vector or matrix. With an empty document or a document containing som understandable text will result in a vector like:
+	When read, Eks will be divided like a vector or matrix. A \emph{buffer} or \emph{file} containing som understandable text will result in a vector like:
 	
 	\begin{verbatim}
 		hello world!
@@ -267,6 +267,8 @@
 	\begin{verbatim}
 	toplevel→{hello world!}
 	\end{verbatim}
+	
+	Eks will always have a toplevel aligned to it. The name of the topmost parent dont have to be named. It should just contain everything that can be seen from the \emph{input source}.
 	
 	You can then add a subelement like:
 	
@@ -284,8 +286,8 @@
 	toplevel→{hello world!,subelement→{this is some text for the subelement.}}
 	\end{verbatim}
 	
-	This way is good in situation if you want to write in multiple lines, or just put out some random text.
-	If you then want to list items, its then meant that you should write like this:
+	This is a simple way to know what's inside the element. \\
+	You can also write as a list. one way is to do it like this:
 	
 	\begin{verbatim}
 		hello world!
@@ -304,7 +306,44 @@
 	}
 	\end{verbatim}
 	
-	this is advantageous if wanting to create a list of items, like this should display a list in a good way.
+	This is the preferable way if the user want to create a list of items.
+	
+	\section{Nestling of lists}
+	
+	As mentioned above the most favorable way of writing a list is by using \#s.
+	Using this method allow you to write huge structures, like this:
+	
+	\begin{verbatim}
+		#list
+		  ##1
+		    ###a
+		    ###b
+		  ##2
+		    ###a
+		    ###b
+	\end{verbatim}
+	
+	this results into:
+	
+	\begin{verbatim}
+	toplevel→{
+	  list→{1→{a,b},2→{a,b}}
+	}
+	\end{verbatim}
+	
+	However after a while it might be annoying to write #s, so it might be an good idea to use \$ instead.
+	\$ will be aligned at the current level and have the same meaning as \#.
+	So the above example could have been written like this instead:
+	
+	\begin{verbatim}
+		#list
+		  ##1
+		    $a
+		    $b
+		  ##2
+		    $a
+		    $b
+	\end{verbatim}
 	
 	\section{Variables}
 	
@@ -359,9 +398,8 @@
 	\begin{itemize}
 		\item \emph{<} go down a level
 		\item \emph{>} go up a level
-		\item \emph{# or ###...} decide the level for the parent
+		\item \emph{\# or \#\#\#...} decide the level for the parent
 		\item \emph{!} go to the bottom level of a {} structure.
-		\item \emph{?} toggle between list mode and broad text mode
 	\end{itemize}
 	depending on where you are, you can insert variables accordingly. A variable may be written like this:
 	
@@ -422,14 +460,10 @@
 	Now its possible to do the things i wanted it to do.
 	
 	\begin{verbatim}
-		//it would be nice with settings, or subinfo for a list (inspired by tex)
-		#item[something1,something2=something other]{
-		  blah blah
-		}
-		
 		//Using code... maybe it should work similar to php...
-		@%C%{
-		whatever=whatever
+		@%C%
+		{
+			int whatever=1+1;
 		}
 		
 		//using functions would be nice
@@ -461,13 +495,10 @@
 	Everything here is just ideas, the first one will probably happen.
 	
 	\begin{thebibliography}{1}
-	
-	%logospråket \emph{http://el.media.mit.edu/logo-foundation/logo/turtle.html}
-	\bibitem{cite:logof}
+
+	\bibitem{ref}
 		Ref1
 	
 	\end{thebibliography}
-	
-	%\subimport{./../biography/}{biography.tex}
 	
 \end{document}

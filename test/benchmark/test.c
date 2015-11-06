@@ -22,39 +22,66 @@
 
 #include <stdio.h>
 #include <eksparent.h>
+#include <statistik.h>
+#include <sys/time.h>
+
+#define SAMPLE_SIZE 10000
+
+/**
+	Get the current time-stamp.
+	
+	@returns
+		the current time-stamp
+*/
+long long current_timestamp()
+{
+	struct timeval te; 
+	//get the current time
+	gettimeofday(&te, NULL);
+
+	//calculate the microseconds
+	long long microseconds = te.tv_sec * 1000000LL + te.tv_usec;
+
+	return microseconds;
+}
 
 int main(void)
 {
+	stati_t *myStats=stati_init(SAMPLE_SIZE);
 
-	EksParent *test=eks_parent_parse_file("./ex.eks");
-	char *result=eks_parent_dump_text(test);
+	const char *filename="./../functionality/ex.eks";
+
+	for(int i=0;i<SAMPLE_SIZE;i++)
+	{
+		long long startTime=current_time_microseconds();
+
+		EksParent *test=eks_parent_parse_file(filename);
 	
-	printf("\nDONE!\n\n");
+		long long finishTime=current_time_microseconds();
 	
-	printf("%s",result);
+		stati_add(myStats,finishTime-startTime);
 	
-	//SaveFile_tl("result.eks", result,strlen(result));
+/*		char *result=eks_parent_dump_text(test);*/
 	
-	size_t flen;
+		eks_parent_destroy(test,EKS_TRUE);
+
+/*		free(result);*/
+	}
 	
-	char *fileContents;
-	g_file_get_contents("result.eks",&fileContents,&flen,NULL);
+	stati_sort(myStats);
 	
-	printf("the test should fail, since im testing :P\n");
+	char *out=stati_print_all(myStats,0);
+	printf("%s\n",out);
+	stati_free(out);
 	
-	printf("\n\n%s\n",strcmp(fileContents,result)==0?"Test succesfully passed!":"The test failed!");
+	stati_destroy(myStats);
 	
-	//test internal destroy
-	eks_parent_destroy(test->firstChild,EKS_TRUE);
-	
-	//eks_parent_destroy(test->firstChild,EKS_TRUE);
-	
-	//eks_parent_destroy(test->firstChild,EKS_TRUE);
-	
-	eks_parent_destroy(test,EKS_TRUE);
-	
-	free(fileContents);
-	free(result);
+/*	double mean     = gsl_stats_mean(data, 1, SAMPLE_SIZE);*/
+/*	double variance = gsl_stats_variance(data, 1, SAMPLE_SIZE);*/
+/*	double largest  = gsl_stats_max(data, 1, SAMPLE_SIZE);*/
+/*	double smallest = gsl_stats_min(data, 1, SAMPLE_SIZE);*/
+/*	*/
+/*	printf("Mean: %g, Variance: %g, Largest: %g, Smallest: %g\n", mean,variance,largest,smallest);*/
 	
 	return 0;
 }

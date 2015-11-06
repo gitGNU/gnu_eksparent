@@ -9,22 +9,30 @@
 ###################################
 
 ###################################
-#	Makefile for the test
+#	General makefile for all tests
 ###################################
 
 CC = gcc
 NAME = test
-DEBUG = ddd
+DEBUG_TOOL = ddd
 
 ###################################
 #	Libs and such
 ###################################
 
-CFLAGS = -std=c99 -Wall -g
+ifdef DEBUG
+DEBUG_OPTIONS = DEBUG=1
+else
+DEBUG_OPTIONS =
+endif
+
+CFLAGS ?= 
+CFLAGS += -std=gnu99 -Wall -g
 CFLAGS += -I./../../src/ 
 CFLAGS += $(shell pkg-config --cflags glib-2.0)
 
-LDFLAGS = -lm ./../../src/libeksparent.so.0.1
+LDFLAGS ?=
+LDFLAGS += -lm ./../../src/libeksparent.so.0.1
 LDFLAGS += $(shell pkg-config --libs glib-2.0)
 
 ###################################
@@ -52,13 +60,24 @@ run: all
 
 clean:
 	rm -f ./*.o
+	rm -f ./*.s
 	rm $(NAME)
 	
 valgrind: all
-	valgrind  --track-origins=yes --tool=memcheck --leak-check=full ./$(NAME)
+	valgrind  --track-origins=yes --tool=memcheck --leak-check=full --show-leak-kinds=all ./$(NAME)
 	
 debug: all
-	$(DEBUG) ./$(NAME) -x ./../debug_profile
+	$(DEBUG_TOOL) ./$(NAME) -x ./../debug_profile
 	
+asm:
+	$(CC) $(CFLAGS) -O0 -S -DASM_OUT ./test.c -o ./test0.s
+	$(CC) $(CFLAGS) -O1 -S -DASM_OUT ./test.c -o ./test1.s
+	$(CC) $(CFLAGS) -O2 -S -DASM_OUT ./test.c -o ./test2.s
+	$(CC) $(CFLAGS) -O3 -S -DASM_OUT ./test.c -o ./test3.s
+
 lib:
-	make -C ./../../src/
+	make -C ./../../src/ all $(DEBUG_OPTIONS)
+	
+cleanlib:
+	make -C ./../../src/ clean
+	

@@ -18,7 +18,80 @@
 #include <stdio.h>
 #include <eksparent.h>
 
+//the pointer for the file which we will generate (output file)
 FILE * pFile;
+
+/**
+	Convert the parameters to something readable, this is the internal part, which only needs to be read by the #to_attribute function.
+	Note this function is very simple, and might generate wrong.
+	
+	@param theParent
+		the parent to convert to xml parameters
+	@param inparam
+		fetched from the foreach function
+*/
+static void to_attribute_internal(EksParent *theParent,void *inparam)
+{
+	char *text=eks_parent_get_string(theParent);
+	
+	if(theParent->structure>=0)
+	{
+		if(theParent->firstChild!=NULL)
+		{
+			fprintf(pFile,"%s=",text);
+			eks_parent_foreach_child(theParent,to_attribute_internal,NULL);
+		}
+		else
+		{
+			if(theParent->rt==EKS_PARENT_IS_TAGVALUE)
+			{
+				fprintf(pFile,"%s=\"\"",text);
+			}
+			else
+			{
+				//if it is the last object in internal list
+				if(theParent==theParent->upperEksParent->upperEksParent->firstChild->prevChild->firstChild)
+				{
+					fprintf(pFile,"\"%s\"",text);
+				}
+				else
+				{
+					fprintf(pFile,"\"%s\" ",text);
+				}
+			}
+		}
+	}
+	else
+	{
+		fprintf(pFile,"<!--%s-->",text);
+	}
+	
+	free(text);
+}
+
+/**
+	Convert the parameters to something readable
+	Note this function is very simple, and might generate wrong.
+	
+	@param theParent
+		the parent to convert to xml parameters
+*/
+void to_attribute(EksParent *theParent,char *tagname,char *after)
+{
+	EksParent *extras=eks_get_extras(theParent);
+
+	if(extras)
+	{
+		fprintf(pFile,"<%s ",tagname);
+		eks_parent_foreach_child(extras,to_attribute_internal,NULL);
+	}
+	else
+	{
+		fprintf(pFile,"<%s",tagname);
+	}
+	
+	fprintf(pFile,"%s",after);
+}
 
 /**
 	Example-function that demonstrates the foreach function. If you want to construct it urself, then its quite simple. 
@@ -33,13 +106,11 @@ void to_xml(EksParent *theParent,void *inparam)
 {
 	char *text=eks_parent_get_string(theParent);
 	
-	//printf("struct: %s %d\n",text,theParent->structure);
-	
 	if(theParent->structure>=0)
 	{
 		if(theParent->firstChild!=NULL)
 		{
-			fprintf(pFile,"<%s>",text);
+			to_attribute(theParent,text,">");
 	
 			eks_parent_foreach_child(theParent,to_xml,NULL);
 		
@@ -50,9 +121,13 @@ void to_xml(EksParent *theParent,void *inparam)
 			if(theParent->rt==EKS_PARENT_IS_TAGVALUE)
 			{
 				if(text[0]=='!')
-					fprintf(pFile,"<%s>",text);
+				{
+					to_attribute(theParent,text,">");
+				}
 				else
-					fprintf(pFile,"<%s />",text);
+				{
+					to_attribute(theParent,text," />");
+				}
 			}
 			else
 			{
@@ -68,6 +143,9 @@ void to_xml(EksParent *theParent,void *inparam)
 	free(text);
 }
 
+/**
+	The main function
+*/
 int main(int argv,char *argc[])
 {
 	char *fileTo="index.html",*fileFrom="./index.eks";
@@ -86,7 +164,12 @@ int main(int argv,char *argc[])
 	
 	printf("\n\nReading was successful!!! %ld\n\n",sizeof(EksParent));
 	
-	printf("%s\n",eks_parent_dump_text(topParentFromRead));
+	char *dumptext=eks_parent_dump_text(topParentFromRead);
+	
+	printf("%s\n",dumptext);
+	
+	free(dumptext);
+	
 	/* Lets read the data */
 	
 	eks_parent_foreach_child(topParentFromRead,to_xml,NULL);
@@ -95,6 +178,8 @@ int main(int argv,char *argc[])
 	
 	//to make valgrind happy
 	eks_parent_destroy(topParentFromRead,EKS_TRUE);
+	
+	fclose(pFile);
 	
 	//lets print that it was successful
 	printf("\nSUCCESS!!!\n");

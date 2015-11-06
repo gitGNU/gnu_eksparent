@@ -12,4 +12,6 @@
 #	Makefile for the test
 ###################################
 
+LDFLAGS = -lstatistik -lgsl -lcblas
+
 include ../makefile

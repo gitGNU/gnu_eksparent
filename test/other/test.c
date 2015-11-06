@@ -17,11 +17,14 @@
 
 #include <stdio.h>
 #include <eksparent.h>
+#include <locale.h>
 #include "misc.h"
 
 int main(void)
 {
 	intptr_t num=1;
+	
+	setlocale(LC_NUMERIC, "");
 	
 	char *str=eks_int_to_string(num);
 	
@@ -32,9 +35,15 @@ int main(void)
 	double val1=0;
 	intptr_t val2=0;
 	
-	int ok=eks_string_to_double("0o123.3e-5",&val1,&val2);
+	int ok=eks_string_to_double("1.6666666666666667",&val1,&val2);
 	
-	printf("test eks_string_to_double: type=%d double=%f int=%d\n",ok,val1,val2);
+	printf("test eks_string_to_double: type=%d double=%f int=%ld\n",ok,val1,val2);
+	
+	char *outstr=eks_double_to_string(val1);
+	
+	printf("test eks_double_to_string: input: %f output: %s\n",val1,outstr);
+	
+	free(outstr);
 	
 	//test custom content
 	

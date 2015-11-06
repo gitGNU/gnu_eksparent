@@ -1,7 +1,6 @@
 /**
 	@file
 	@author Florian Evaldsson
-	@version 0.1
 	
 	@section LICENSE
 	
@@ -39,13 +38,17 @@
 #define eks_warning_message(msg, ...) printf("\e[0m\e[1m" __FILE__ ":%d: \e[1;33mWARNING\e[0m\e[1m: (%s)\n\e[32m→\e[0m\e[1m " msg "\e[0m\n\n",__LINE__,__func__, ##__VA_ARGS__)
 
 /** Display a debug message with nice looking colors */
+#ifdef EKS_SHOW_DEBUG
 #define eks_debug_message(msg, ...) printf("\e[0m\e[1m" __FILE__ ":%d: \e[1;36mDEBUG\e[0m\e[1m: (%s)\n\e[32m→\e[0m\e[1m " msg "\e[0m\n\n",__LINE__,__func__, ##__VA_ARGS__)
+#else
+#define eks_debug_message(msg, ...) 
+#endif
 
 /** Used with rt */
 /** if its a \# value. */
-#define EKS_PARENT_IS_TAGVALUE 0
+#define EKS_PARENT_IS_TAGVALUE 1
 /** if its not a \# value. */
-#define EKS_PARENT_IS_UNTAGGED 1
+#define EKS_PARENT_IS_UNTAGGED 0
 
 /** Used with span */
 /** if its not a multiline comment, or just inside {} */
@@ -98,8 +101,8 @@ typedef struct EksParent
 	unsigned int rt : 1; ///< rt= if 'value' then its says if its # or not.
 	unsigned int span : 1; ///< span= if 'value' then its says if its {} or not, if 'comment' then it says if its // or /**/
 	signed int structure : 16; ///< The significant structure describing what the object 'is', it can be one of these: 1++++ = parent,-1=text,-1=value,-2=comment,0=topmost parent
-	unsigned int camount : 8; //< Amount of customs
-	unsigned int : 0; //< fill it up
+	unsigned int camount : 8; ///< Amount of customs (use this?)
+	unsigned int : 0; ///< fill it up
 	
 	void *custom; ///< for custom usage for an application, This is a vector with NULL termination
 	
@@ -141,6 +144,16 @@ typedef enum EksParseStateComment
 }EksParseStateComment;
 
 /**
+	This type is used in the parsing. It contains information regarding the char-buffers.
+*/
+typedef struct EksParseString
+{
+	char *word; ///< The word, or the string. It will collect in here if it is in a string, like \#something or just a plain word
+	size_t wordSize; ///< The currently allocated word size
+	size_t currentWordSize; ///< How big the current word is at this moment
+}EksParseString;
+
+/**
 	The main structure for the parsing.
 */
 typedef struct EksParseType
@@ -148,8 +161,7 @@ typedef struct EksParseType
 	//for current states
 	EksParseStates state; ///< Current state of the statemashine
 	EksParseStateComment stateComment; ///< If it is a comment, we are currently looking into 
-	uint8_t stateVector; ///< Saves if it is in vector mode or not, eg \#obj ← vector mode, or \#obj{\#obj{}} ← not vector mode
-	uint8_t stateDelegate; ///< Saves if its in colon mode eg, \#vect:aoe\n etc
+	unsigned int currentLineAmount; ///< current line number read
 	
 	//the return parent
 	EksParent *parent; ///< The parent structure we will return
@@ -158,23 +170,28 @@ typedef struct EksParseType
 	//for handeling the current amount of #s
 	size_t currentParentLevel; ///< Saving the current amount of \# (levels)
 	size_t prevParentLevel; ///< Saving the previous amount of \# (levels, used when changing from \#\#\# to \#) 
-
-	//for handeling the input of the normal input string
-	char *word; ///< The word, or the string. It will collect in here if it is in a string, like \#something or just a plain word
-	size_t wordSize; ///< The currently allocated word size
-	size_t currentWordSize; ///< How big the current word is at this moment
-
-	//for handeling the input of the comment string
-	char *commentWord; ///< The main string for saving chars in a comment.
-	size_t commentWordSize; ///< The allocated size for the comment string
-	size_t currentCommentWordSize; ///< The current size for the comment-word.
+	
+	EksParseString *commonWord; ///< String used for common stuff such as text
+	EksParseString *commentWord; ///< String used for comments
 	
 	int commentNestleSize; ///< for calculating where in the nestling process we are
 
 	//special string cases
-	unsigned int stateBackslash:1; ///< If it noticed a backslash
-	unsigned int stateIsString:1; ///< If it noticed a \" (quotation mark)
-	unsigned int stateVariableclimb:2; ///< different temp states for variable
+	unsigned char stateBackslash:1; ///< If it noticed a backslash
+	unsigned char stateIsString:1; ///< If it noticed a \" (quotation mark)
+	unsigned char stateIsDollarvalue:1; ///< If it is # or $
+	unsigned char stateIsInternalValueParent:2; ///< If it is [\#par:value]
+	unsigned char stateVariableclimb:2; ///< different temp states for variable
+
+	char *storedWord; ///< used with the internal parser.
+
+	union
+	{
+		struct EksParseType *internalValueParser; ///< the internal parser used for [].
+		EksParent *internalValueParserResult; /// where the result is stored (temporarily)
+	};
+	
+	struct EksParseType *upperInternalValueParser; ///< the the upper parser for the '[]'-handeling. If its null, then its the absolute top.
 
 	//for the level ("#value{"s) of the parsing
 	int *ladder; ///< If the levels are freaked out we kinda need to wierdly save the levels.
@@ -182,7 +199,7 @@ typedef struct EksParseType
 	int ladderCurrentAmount; ///< The current amount of elements in the ladder
 }EksParseType;
 
-/***********FUNCTIONS START HERE!******/
+/*********** FUNCTIONS START HERE! ***********/
 
 EksParent *eks_parent_new_base(EksParentType ptype, EksParent *topParent, EksParent *extras);
 EksParent *eks_parent_new_string(const char *name, EksParentType ptype, EksParent *topParent, EksParent *extras);
@@ -229,15 +246,54 @@ void eks_parent_foreach_child(EksParent *theParent,void *func,void *inparam);
 		eks_error_message("thisParent (from eks_parent_foreach_child_start) is NULL!"); \
 		break; \
 	} \
-	EksParent *thisParent ## loopUnit ## _eks_firstUnit=thisParent->firstChild; \
-	if(!thisParent ## loopUnit ## _eks_firstUnit){ \
+	EksParent *loopUnit ## _eks_firstUnit=thisParent->firstChild; \
+	if(!loopUnit ## _eks_firstUnit){ \
 		eks_error_message("No first child? Parent %p",thisParent); \
 		break; \
 	} \
-	EksParent *loopUnit=thisParent ## loopUnit ## _eks_firstUnit; \
-	EksParent *thisParent ## loopUnit ## _eks_sloopUnit; \
+	EksParent *loopUnit=loopUnit ## _eks_firstUnit; \
+	EksParent *loopUnit ## _eks_sloopUnit; \
 	do{ \
-		thisParent ## loopUnit ## _eks_sloopUnit=loopUnit->nextChild;
+		loopUnit ## _eks_sloopUnit=loopUnit->nextChild;
+
+/** used with eks_parent_foreach_child_start_test */
+#define EKS_FIRST_UNIT_COUNTER EKS_MACRO_CONCAT(eks_firstUnit_ , __LINE__)
+/** used with eks_parent_foreach_child_start_test */
+#define EKS_SLOOP_UNIT_COUNTER EKS_MACRO_CONCAT(eks_sloopUnit_ , __LINE__)
+/** used with eks_parent_foreach_child_start_test */
+#define EKS_FIX_UNIT_COUNTER EKS_MACRO_CONCAT(eks_fixUnit_ , __LINE__)
+/** used with eks_parent_foreach_child_start_test */
+#define EKS_GOTO_COUNTER EKS_MACRO_CONCAT(eks_sloopUnit_ , __LINE__)
+
+/** used with eks_parent_foreach_child_start_test */
+#define EKS_CONCAT_TWO(x, y) x ## y
+/** used with eks_parent_foreach_child_start_test */
+#define EKS_MACRO_CONCAT(x, y) EKS_CONCAT_TWO(x, y)
+
+/** used with eks_parent_foreach_child_start_test */
+#define eks_parent_foreach_child_start_test_count(thisParent,loopUnit,EKS_FIRST_UNIT,EKS_SLOOP_UNIT,EKS_FIX_UNIT,EKS_GOTO) \
+	do{ \
+	if(!thisParent){ \
+		eks_error_message("eks_parent_foreach_child_start: thisParent is NULL!"); \
+		break; \
+	} \
+	EksParent *EKS_FIRST_UNIT=thisParent->firstChild; \
+	if(!EKS_FIRST_UNIT){ \
+		eks_error_message("eks_parent_foreach_child_start: No first child? Parent %p",thisParent); \
+		break; \
+	} \
+	EksParent *EKS_FIX_UNIT=EKS_FIRST_UNIT; \
+	EksParent *EKS_SLOOP_UNIT; \
+	goto EKS_GOTO; \
+	while((EKS_FIX_UNIT=EKS_SLOOP_UNIT)!=EKS_FIRST_UNIT){ \
+		EKS_GOTO: \
+		EKS_SLOOP_UNIT=EKS_FIX_UNIT->nextChild; \
+		loopUnit=EKS_FIX_UNIT;
+
+/** used with eks_parent_foreach_child_start_test */
+#define eks_parent_foreach_child_start_test(thisParent,loopUnit) \
+	eks_parent_foreach_child_start_test_count(thisParent,loopUnit,EKS_FIRST_UNIT_COUNTER,EKS_SLOOP_UNIT_COUNTER,EKS_FIX_UNIT_COUNTER,EKS_GOTO_COUNTER)
+
 
 /**
 	The closing function to the foreach loop in eksparent. (remember to open with: eks_parent_foreach_child_start).
@@ -248,8 +304,16 @@ void eks_parent_foreach_child(EksParent *theParent,void *func,void *inparam);
 	@param loopUnit
 		This is the parameter you should use as the return value for each loop.
 */
-#define eks_parent_foreach_child_end(thisParent,loopUnit) loopUnit=thisParent ## loopUnit ## _eks_sloopUnit; \
-	}while(loopUnit!=thisParent ## loopUnit ## _eks_firstUnit); \
+
+
+#define eks_parent_foreach_child_end(thisParent,loopUnit) \
+	loopUnit=loopUnit ## _eks_sloopUnit; \
+	}while(loopUnit!=loopUnit ## _eks_firstUnit); \
+	}while(0)
+
+/** used with eks_parent_foreach_child_start_test */
+#define eks_parent_foreach_child_end_test \
+	} \
 	}while(0)
 
 size_t eks_parent_get_child_amount(EksParent *thisParent);
@@ -328,12 +392,18 @@ void eks_parent_destroy(EksParent *thisParent,EksBool recursive);
 void eks_parent_custom_set(EksParent *thisParent,void *content,int pos);
 void *eks_parent_custom_get(EksParent *thisParent,int pos);
 
+EksParent *eks_get_extras(EksParent *thisParent);
+
+/*****FOR OUTPUT*****/
+
+char *eks_parent_dump_text_with_settings(EksParent *thisParent,int oneLine,int paranthesis);
+
 char *eks_parent_dump_text(EksParent *thisParent);
 
 /*****FOR PARSING*****/
 
 void eks_parent_parse_char(EksParseType *parser, char c);
 
-EksParent *eks_parent_parse_text(unsigned char *buffer,const char *name);
+EksParent *eks_parent_parse_text(const char *buffer,const char *name);
 
-EksParent *eks_parent_parse_file(char *filename);
+EksParent *eks_parent_parse_file(const char *filename);

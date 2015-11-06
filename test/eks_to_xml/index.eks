@@ -19,6 +19,9 @@
 	This example is a html file, but written in eks.
 */
 
+/*
+	This page is meant to be read by a web browser, after conversion ofc.
+*/
 
 #!DOCTYPE HTML
 #HTML
@@ -26,32 +29,54 @@
 	#HEAD
 	#BODY
 	{
-		#h1{Hello world!}
-	
-		#p{"This is really "#i{cool!}}
+		$center{#h1{The EKS Language}}
 		
-		#p{"A new "#b{paragraph}}
+		$h2{What is Eks?}
+		
+		#p:The\ ""$i{Eks Language}\ is a markup language designed to be used as a more type friendly variant of the already existing ones.
+		
+		#h2{What can Eks do?}
+		
+		#p{Eks can do highly complicated hireachies and tree structures. It can also do single-line and multiline comments ("/* multiline */"\ ,\ "// singleline"). It should in its future also be able to execute code in itself.}
+		
+		$h2{How far has Eks reached?}
+		
+		#p: Eks is a work in progress, it isnt standardized yet and is mostly under development. However, many functions is already implemented and there should not be much time left until version 1.0. This web-page is for example written in eks.
 		
 		//Eks instead of html, isnt that sweet?
 		
-		#h2{A new header}
+		#h2{An Eks example}
 		
-		#p{More text ... #br:< even more text}
-		
-		#p{0xFF}
-		
-		#table
+		$p
 		{
-			#tr
+			$code
 			{
-				#td:a1
-				#td:a2
-			}
-			#tr
-			{
-				#td:a3
-				#td:a4
+				"#parent"
+				$br
+				"##subobject"
+				$br
+				"#back to level 1:inner text"
 			}
 		}
+		
+		$h2{Other test}
+		
+		#a[#href:"http://www.hello.com"#style:"background-color:#cccccc;"]{$i{hello}, hai}
+		
+		#p{More text ... $br even more text $br and more text}
+		
+		#p{what will this be converted to?:|0xFF}
+		
+		#table
+			##tr
+				###td:a1 $hr
+				###td:a2
+			##tr
+				###td:a3
+				###td:a4
+				
+		#h2{Other information}
+		
+		This file/webpage is at its current state mostly a demo for conversion to xml (HTML).
 	}
 }

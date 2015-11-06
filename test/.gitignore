@@ -1,0 +1,12 @@
+#for compilation
+
+test*
+!test.c
+*.o
+
+#for other tests
+
+*.xml
+*.html
+
+*.s
