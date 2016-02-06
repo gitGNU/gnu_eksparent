@@ -1078,7 +1078,18 @@ void eks_parent_destroy(EksParent *thisParent,EksBool recursive)
 			if(thisParent->nextChild!=thisParent && thisParent->prevChild!=thisParent)
 				thisParent->upperEksParent->firstChild=thisParent->nextChild;
 			else
-				thisParent->upperEksParent->firstChild=NULL;
+			{
+				//if the node below contains a child then do like this: 
+				//O->O->O => O->X->O => O->O OR O->NULL depending on the recursive command
+				if(!recursive)
+				{
+					thisParent->upperEksParent->firstChild=thisParent->firstChild;
+				}
+				else
+				{
+					thisParent->upperEksParent->firstChild=NULL;
+				}
+			}
 		}
 		
 		//if you want to destroy everything below

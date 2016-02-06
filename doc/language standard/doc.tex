@@ -97,6 +97,10 @@
 	%\listoffigures
 	\newpage
 	
+	%eks is currently using 6 hard-lined characters #,$,@,\,",{ and (/ kinda) → change so that i remove $ and replace it with \ like latex?
+	%xml is using 1 < (kinda)
+	%latex is using 3 \,%,{
+	
 	\chapter{Background}
 	
 	My orginal purpose were to create a language which purpose is to be an easy to read markup language. 
@@ -331,7 +335,7 @@
 	}
 	\end{verbatim}
 	
-	However after a while it might be annoying to write #s, so it might be an good idea to use \$ instead.
+	However after a while it might be annoying to write \#s, so it might be an good idea to use \$ instead.
 	\$ will be aligned at the current level and have the same meaning as \#.
 	So the above example could have been written like this instead:
 	
@@ -399,7 +403,7 @@
 		\item \emph{<} go down a level
 		\item \emph{>} go up a level
 		\item \emph{\# or \#\#\#...} decide the level for the parent
-		\item \emph{!} go to the bottom level of a {} structure.
+		\item \emph{!} go to the bottom level of a {} structure (root).
 	\end{itemize}
 	depending on where you are, you can insert variables accordingly. A variable may be written like this:
 	
@@ -428,10 +432,12 @@
 		  ##sublist
 		    sublists first item
 		    sublists second item
+		  @<
+		  
 		  lists first item
 		  
 		//this will break the list so you go back to the root element
-		@#
+		@!
 		
 		/*
 		  btw, eks support multi-line comments.
@@ -457,7 +463,142 @@
 	
 	\chapter{Future proposals}
 	
-	Now its possible to do the things i wanted it to do.
+	Some of the ideas i have in mind atm is:
+	
+	\section{Space between objects}
+		solve the issue with writing for example:
+		\begin{verbatim}
+		#something
+		{
+			hello $i{world}!
+		}
+		\end{verbatim}
+		
+		This would result into:
+		
+		\begin{verbatim}
+		something→{hello,i→{world},!}
+		\end{verbatim}
+		
+		Maybe it should be:
+		
+		\begin{verbatim}
+		something→{"hello ",i→{world},!}
+		\end{verbatim}
+		
+	\subsection{How it could be solved}
+	
+		For all newlines there will be ignores, however during one line it wont.
+		
+		So this would give the space
+		
+		\begin{verbatim}
+		#something
+		{
+			hello $i{world}!
+		}
+		\end{verbatim}
+		
+		while this wont
+		
+		\begin{verbatim}
+		#something
+		{
+			hello 
+			$i{world}!
+		}
+		\end{verbatim}
+	
+	\section{Revamp the varibales into a new macro language}
+	
+	This idea is based so that the variables will be executed like macros, and that it will be linked to like a library, which in return will improve the speed. 
+	Then it should be able to be executed like a macro language.
+	The idea is like;
+	
+	Dollar sign ''@'' (maybe change the symbol? Other suggestions (\# (change in eks),\%,\&)) will work like the \# does like in the c preprocessor. 
+	Then declared variables will be executed like functions (similar to C). However there is no predefined function from the start. Global variables should be called in other fashion.
+	
+	A theoretical example could look like this:
+	
+	\begin{verbatim}
+		@include std.<filetype>
+		
+		//concatination, all types are strings (maybe char*-s) 
+		@define func(a,b){int c=std_to_int(a)+std_to_int(b);return std_to_string(c)..b;}
+		
+		//returns the current line number
+		@global(LINE_NUMBER)
+		
+		#hello
+			func(43,65)
+			
+		//returns
+		#hello
+			10865
+			
+	\end{verbatim}
+	
+	\subsection{Advantages}
+	
+		There is no really good preprocessing language to use with this one. PHP is using XML syntax, also cannot call declared variables. M4 is just too complicated to use, like when doing turing based programming.
+	
+	\subsection{Problems}
+	
+		eks is working towards language neutrality. Languages like PHP,Javascript,VHDL etc pretty much require words for types such as INT,IF,ELSE etc. This macro language will walk into the same issue.
+	
+	\section{Nestle the dollarsigns}
+	
+	the \# can be nestled like this: \# then \#\# then \#\#\# etc.
+	Why not do something similar for \$s
+	Like the opposite, \$\$\$ (defines the highest level) then \$\$ then \$. 
+	
+	\section{The \\begin{something} problem}
+	
+		In latex you can do \\begin\{something\} and then \\end\{something\} This is good when encapsylating large amounts of data.
+		The verbatim example is quite good. In verbatim it will first end when you really type \\end\{verbatim\} (noting else)
+		This is also considered important in the xml language thats why they enforce the enclosure of each \<value\>:s
+		
+		This could be done in eks in multiple ways...
+		
+		\subsection{Using the variables}
+		
+		One way is @START_TEXT and @END_TEXT, however because of eks limits it would probably look more like this.
+		
+		\begin{verbatim}
+		@''' \#misbehaving eks badly \$i \" \@! /** this wont be parsed in a wierd way and put into the large array */ @'''
+		\end{verbatim}
+		
+		the amount of \' may indicate our seriousness. \@\'\'\'\'\'\' would mean plenty of seriousness
+	
+		\subsection{multiple curly brackets}
+		
+		The amount of curly brackets marks our seriousness, more than two means that it will be treaten like a string. More brackets means ofc more seriousness.
+		
+		Like:
+		
+		\begin{verbatim}
+		#variable{{ \#misbehaving eks badly \$i \" \@! /** this wont be parsed in a wierd way and put into the large array */ }}
+		\end{verbatim}
+		
+		The problem with this solution is that it wont be able to handle no-named vectors at the start of a vector.
+		
+		\subsection{Ending character}
+		
+		when \#value\# is started, then it has to end with \#/value\#.
+		
+		The example from above is used.	
+		
+		\begin{verbatim}
+		#variable# \#misbehaving eks badly \$i \" \@! /** this wont be parsed in a wierd way and put into the large array */ #/variable#
+		\end{verbatim}
+		
+		The problem here is that variables defined like this wont work:
+		
+		\begin{verbatim}
+		#variable1#variable2#variable3
+		\end{verbatim}
+		
+	\section{Other}
 	
 	\begin{verbatim}
 		//Using code... maybe it should work similar to php...
@@ -467,7 +608,7 @@
 		}
 		
 		//using functions would be nice
-		@func1(var1,var2)
+		func1(var1,var2)
 		
 		/*
 		  i dunno how this should work... But it should be there
@@ -492,7 +633,7 @@
 		
 	\end{verbatim}
 	
-	Everything here is just ideas, the first one will probably happen.
+	Everything here is just ideas...
 	
 	\begin{thebibliography}{1}
 

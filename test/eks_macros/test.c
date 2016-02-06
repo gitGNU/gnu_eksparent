@@ -60,6 +60,8 @@ int main(void)
 	
 	//start the macro testing
 
+	for(;0;printf("hello\n"));
+
 	#ifdef ASM_OUT
 		asm("START OF FIRST LOOP");
 	#endif
@@ -71,7 +73,8 @@ int main(void)
 		{
 			eks_parent_foreach_child_start_test(loopParent,EksParent *loopParent2)
 			{
-				printf("name-in: %s\n",eks_parent_get_string(loopParent2));
+				//some diff
+				printf("name.in: %s\n",eks_parent_get_string(loopParent2));
 			}eks_parent_foreach_child_end_test;
 		}
 	}eks_parent_foreach_child_end_test;
@@ -83,6 +86,8 @@ int main(void)
 	printf("test other version of the same macro\n");
 	
 	#ifdef ASM_OUT
+		asm("test other version of the same macro");
+	
 		asm("START OF SECOND LOOP");
 	#endif
 	
